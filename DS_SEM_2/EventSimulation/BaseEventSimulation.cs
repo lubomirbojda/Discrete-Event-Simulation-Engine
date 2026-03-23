@@ -1,4 +1,4 @@
-﻿using DS_SEM_2.MonteCarlo;
+using DS_SEM_2.MonteCarlo;
 
 namespace DS_SEM_2.EventSimulation;
 
@@ -6,12 +6,20 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
 {
     private PriorityQueue<BaseEvent, double> _eventsQueue = new();
 
-    private double _simTime = 0;
+    public double SimTime { get; private set; } = 0;
 
     private double _maxSimTime = double.MaxValue;
 
     protected BaseEventSimulation(int seed) : base(seed)
     {
+    }
+
+    public bool PlanEvent(BaseEvent newEvent)
+    {
+        if (newEvent.ExecuteTime < SimTime)
+            return false;
+        _eventsQueue.Enqueue(newEvent, newEvent.ExecuteTime);
+        return true;
     }
 
     public void SetMaxSimulationTime(double maxSimTime)
@@ -28,7 +36,7 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
             if (actualEvent.ExecuteTime > _maxSimTime)
                 break;
 
-            _simTime = actualEvent.ExecuteTime;
+            SimTime = actualEvent.ExecuteTime;
             actualEvent.Execute();
         }
     }

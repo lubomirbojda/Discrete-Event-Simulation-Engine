@@ -28,7 +28,6 @@ public abstract class BaseEmpiric<T, TInterval> where TInterval : BaseInterval<T
         }
     }
 
-    //metóda vytvorená pomocou AI - zdokumentované v kapitole 1
     public T GenerateNext()
     {
         double roll = _probGenerator.NextDouble();

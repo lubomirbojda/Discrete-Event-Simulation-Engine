@@ -47,14 +47,28 @@ public class GeneratorsTester
         TestGenerator("ContinuousUniformTest.txt", generator.GenerateNext);
     }
 
-    private static void TestGenerator<T> (string fileName, Func<T> generate) where T : INumber<T>
+    public static void ExponentialDistributionTest(double lambda, int gensCount)
+    {
+        Random rand = new();
+        var generator = new Exponential.ExponentialDist(rand, lambda);
+        TestGenerator("ExponentialDistributionTest.txt", generator.GenerateNext, gensCount);
+    }
+
+    public static void TriangularDistributionTest(double min, double max, double mod, int gensCount)
+    {
+        Random rand = new();
+        var generator = new Triangular.TriangularDist(rand, min, max, mod);
+        TestGenerator("TriangularDistributionTest.txt", generator.GenerateNext, gensCount);
+    }
+
+    private static void TestGenerator<T> (string fileName, Func<T> generate, int gensCount = GENS_COUNT) where T : INumber<T>
     {
         string currentDir = Environment.CurrentDirectory;
         string fullPath = Path.Combine(currentDir, fileName);
 
         using (StreamWriter writer = new(fullPath))
         {
-            for (int i = 0; i < GENS_COUNT; i++)
+            for (int i = 0; i < gensCount; i++)
             {
                 writer.WriteLine(generate());
             }
