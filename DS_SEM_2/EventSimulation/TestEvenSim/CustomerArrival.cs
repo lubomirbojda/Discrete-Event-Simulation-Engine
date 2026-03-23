@@ -1,13 +1,14 @@
 namespace DS_SEM_2.EventSimulation.TestEvenSim;
 
-public class CustomerArrival : MainEvent
+public class CustomerArrival : TestEvent
 {
-    public CustomerArrival(double executeTime, MainSimulation simulation) : base(executeTime, simulation)
+    public CustomerArrival(double executeTime, TestSimulation simulation) : base(executeTime, simulation)
     {
     }
 
     public override void Execute()
     {
+        Customer.ArrivalTime = ExecuteTime;
         if (_simulation.IsSellerAvailable)
         {
             ServiceStart serviceStart = new(_simulation.SimTime, _simulation)
@@ -20,6 +21,7 @@ public class CustomerArrival : MainEvent
         else
         {
             _simulation.CustomersQueue.Enqueue(Customer);
+            _simulation.AverageLenghtOfQueue.Add(_simulation.CustomersQueue.Count, ExecuteTime);
         }
 
         var u = _simulation.CustommerArrivalGen.GenerateNext();

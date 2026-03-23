@@ -1,8 +1,8 @@
 namespace DS_SEM_2.EventSimulation.TestEvenSim;
 
-public class ServiceStart : MainEvent
+public class ServiceStart : TestEvent
 {
-    public ServiceStart(double executeTime, MainSimulation simulation) : base(executeTime, simulation)
+    public ServiceStart(double executeTime, TestSimulation simulation) : base(executeTime, simulation)
     {
     }
 
@@ -15,5 +15,7 @@ public class ServiceStart : MainEvent
             Customer = Customer
         };
         _simulation.PlanEvent(serviceEnd);
+
+        _simulation.AverageCustomerTimeInQueue.Add(ExecuteTime - Customer.ArrivalTime);
     }
 }

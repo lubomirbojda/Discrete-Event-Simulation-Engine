@@ -10,6 +10,8 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
 
     private double _maxSimTime = double.MaxValue;
 
+    private bool _isRunning = true;
+
     protected BaseEventSimulation(int seed) : base(seed)
     {
     }
@@ -27,9 +29,21 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
         _maxSimTime = maxSimTime;
     }
 
+    public void StopReplication()
+    {
+        _isRunning = false;
+    }
+
+    protected override void BeforeReplication()
+    {
+        SimTime = 0;
+        _isRunning = true;
+        _eventsQueue.Clear();
+    }
+
     protected override void DoReplication()
     {
-        while (_eventsQueue.Count > 0)
+        while (_eventsQueue.Count > 0 && _isRunning)
         {
             var actualEvent = _eventsQueue.Dequeue();
 
