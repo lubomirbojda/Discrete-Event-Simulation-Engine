@@ -12,6 +12,6 @@ public class Program
 
         Random r = new();
         TestSimulation test = new(r.Next(), 100000);
-        test.RunSimulation(100);
+        test.RunSimulation(10);
     }
 }

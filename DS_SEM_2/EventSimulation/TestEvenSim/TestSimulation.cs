@@ -14,7 +14,7 @@ public class TestSimulation : BaseEventSimulation
 
     public int MaxServedCustomers { get; private set; }
 
-    private int ServedCustomers = 0;
+    public int ServedCustomers { get; private set; } = 0;
 
     public SimpleStatistics AverageCustomerTimeInQueue { get; private set; } = new();
     public TimeStatistics AverageLenghtOfQueue { get; private set; } = new();
@@ -66,6 +66,11 @@ public class TestSimulation : BaseEventSimulation
     protected override void AfterSimulation()
     {
         Console.WriteLine("Priemerny cas cakania v rade: " + _averageCustomerTimeInQueue.GetAverage() + " sekund");
+        var (lower, higher) = _averageCustomerTimeInQueue.GetConfidenceInterval90();
+        Console.WriteLine("90% Interval spolahlivosti: <" + lower + ", " + higher + ">");
+        
         Console.WriteLine("Priemerna dlzka radu: " + _averageLengthOfQueue.GetAverage());
+        (lower, higher) = _averageLengthOfQueue.GetConfidenceInterval90();
+        Console.WriteLine("90% Interval spolahlivosti: <" + lower + ", " + higher + ">");
     }
 }
