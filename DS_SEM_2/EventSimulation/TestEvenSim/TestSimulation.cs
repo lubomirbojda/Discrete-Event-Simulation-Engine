@@ -57,7 +57,7 @@ public class TestSimulation : BaseEventSimulation
         _averageCustomerTimeInQueue.Add(AverageCustomerTimeInQueue.GetAverage());
         _averageLengthOfQueue.Add(AverageLenghtOfQueue.GetAverage(SimTime));
 
-        Console.WriteLine("One rep done " + _currentReplication);
+        Console.WriteLine("Replikacia c. " + _currentReplication + " hotova");
 
         AverageCustomerTimeInQueue.Reset();
         AverageLenghtOfQueue.Reset();

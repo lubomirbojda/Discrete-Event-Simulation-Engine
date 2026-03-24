@@ -23,6 +23,7 @@ public class SimpleStatistics
     public void Reset()
     {
         _sumOfValues = 0;
+        _sumOfSquares = 0;
         _count = 0;
     }
 
