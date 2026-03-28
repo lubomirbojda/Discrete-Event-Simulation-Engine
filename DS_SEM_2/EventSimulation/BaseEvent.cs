@@ -1,13 +1,10 @@
 namespace DS_SEM_2.EventSimulation;
 
-public abstract class BaseEvent
+public abstract class BaseEvent<TSimulation> : EventCore
 {
-    public double ExecuteTime { get; private set; }
-
-    public BaseEvent(double executeTime)
+    protected TSimulation _simulation;
+    protected BaseEvent(double executeTime, TSimulation simulation) : base(executeTime)
     {
-        ExecuteTime = executeTime;
+        _simulation = simulation;
     }
-
-    public abstract void Execute();
 }

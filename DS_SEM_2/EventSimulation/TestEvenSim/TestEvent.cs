@@ -1,12 +1,11 @@
 namespace DS_SEM_2.EventSimulation.TestEvenSim;
 
-public abstract class TestEvent : BaseEvent
+public abstract class TestEvent : BaseEvent<TestSimulation>
 {
-    protected TestSimulation _simulation;
+    protected TestEvent(double executeTime, TestSimulation simulation) : base(executeTime, simulation)
+    {
+    }
+
     public Customer Customer { get; set; } = new();
 
-    protected TestEvent(double executeTime, TestSimulation simulation) : base(executeTime)
-    {
-        _simulation = simulation;
-    }
 }
