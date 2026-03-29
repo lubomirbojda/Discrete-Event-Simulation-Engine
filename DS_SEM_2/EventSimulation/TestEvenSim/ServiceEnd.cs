@@ -8,22 +8,22 @@ public class ServiceEnd : TestEvent
 
     public override void Execute()
     {
-        if (_simulation.CustomersQueue.Count > 0)
+        if (Simulation.CustomersQueue.Count > 0)
         {
-            var nextCustomer = _simulation.CustomersQueue.Dequeue();
-            ServiceStart serviceStart = new(_simulation.SimTime, _simulation)
+            var nextCustomer = Simulation.CustomersQueue.Dequeue();
+            ServiceStart serviceStart = new(Simulation.SimTime, Simulation)
             {
                 Customer = nextCustomer
             };
-            _simulation.PlanEvent(serviceStart);
+            Simulation.PlanEvent(serviceStart);
 
-            _simulation.AverageLenghtOfQueue.Add(_simulation.CustomersQueue.Count, ExecuteTime);
+            Simulation.AverageLenghtOfQueue.Add(Simulation.CustomersQueue.Count, ExecuteTime);
         }
         else
         {
-            _simulation.IsSellerAvailable = true;
+            Simulation.IsSellerAvailable = true;
         }
 
-        _simulation.OneCustomerServed();
+        Simulation.OneCustomerServed();
     }
 }

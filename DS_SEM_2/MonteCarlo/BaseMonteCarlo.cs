@@ -4,7 +4,7 @@ public abstract class BaseMonteCarlo
 {
     public Random _seedGenerator {  get; private set; }
     private bool _isRunning = true;
-    protected int _currentReplication;
+    public int CurrentReplication { get; protected set; }
     protected int _replicationsCount;
 
     protected BaseMonteCarlo(int seed)
@@ -28,14 +28,14 @@ public abstract class BaseMonteCarlo
         _replicationsCount = replicationsCount;
         BeforeSimulation();
 
-        _currentReplication = 0;
-        while (_currentReplication < replicationsCount && _isRunning)
+        CurrentReplication = 0;
+        while (CurrentReplication < replicationsCount && _isRunning)
         {
             BeforeReplication();
 
             DoReplication();
 
-            _currentReplication++;
+            CurrentReplication++;
             AfterReplication();
         }
 

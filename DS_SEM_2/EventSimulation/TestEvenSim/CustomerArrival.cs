@@ -9,24 +9,24 @@ public class CustomerArrival : TestEvent
     public override void Execute()
     {
         Customer.ArrivalTime = ExecuteTime;
-        if (_simulation.IsSellerAvailable)
+        if (Simulation.IsSellerAvailable)
         {
-            ServiceStart serviceStart = new(_simulation.SimTime, _simulation)
+            ServiceStart serviceStart = new(Simulation.SimTime, Simulation)
             {
                 Customer = Customer
             };
-            _simulation.PlanEvent(serviceStart);
-            _simulation.IsSellerAvailable = false;
+            Simulation.PlanEvent(serviceStart);
+            Simulation.IsSellerAvailable = false;
         }
         else
         {
-            _simulation.CustomersQueue.Enqueue(Customer);
-            _simulation.AverageLenghtOfQueue.Add(_simulation.CustomersQueue.Count, ExecuteTime);
+            Simulation.CustomersQueue.Enqueue(Customer);
+            Simulation.AverageLenghtOfQueue.Add(Simulation.CustomersQueue.Count, ExecuteTime);
         }
 
-        var u = _simulation.CustommerArrivalGen.GenerateNext();
-        var nextArrivalTime = _simulation.SimTime + u;
-        CustomerArrival nextCustArr = new(nextArrivalTime, _simulation);
-        _simulation.PlanEvent(nextCustArr);
+        var u = Simulation.CustommerArrivalGen.GenerateNext();
+        var nextArrivalTime = Simulation.SimTime + u;
+        CustomerArrival nextCustArr = new(nextArrivalTime, Simulation);
+        Simulation.PlanEvent(nextCustArr);
     }
 }

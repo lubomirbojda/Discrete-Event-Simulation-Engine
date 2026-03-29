@@ -8,14 +8,14 @@ public class ServiceStart : TestEvent
 
     public override void Execute()
     {
-        var u = _simulation.ServiceTimeGen.GenerateNext();
-        var serviceEndTime = _simulation.SimTime + u;
-        ServiceEnd serviceEnd = new(serviceEndTime, _simulation)
+        var u = Simulation.ServiceTimeGen.GenerateNext();
+        var serviceEndTime = Simulation.SimTime + u;
+        ServiceEnd serviceEnd = new(serviceEndTime, Simulation)
         {
             Customer = Customer
         };
-        _simulation.PlanEvent(serviceEnd);
+        Simulation.PlanEvent(serviceEnd);
 
-        _simulation.AverageCustomerTimeInQueue.Add(ExecuteTime - Customer.ArrivalTime);
+        Simulation.AverageCustomerTimeInQueue.Add(ExecuteTime - Customer.ArrivalTime);
     }
 }

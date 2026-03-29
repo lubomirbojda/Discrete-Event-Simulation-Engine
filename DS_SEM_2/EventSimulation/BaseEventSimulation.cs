@@ -14,13 +14,22 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
 
     private bool _isStopped = false;
 
+    private List<ISimGuiDelegate> _simGUIDelegates = new();
+
     private bool _firstSleepPlanned = false;
+
     public bool IsTurboActive { get; private set; } = true;
 
-    public double Speed { get; set; } = 1;
+    public double Speed { get; private set; } = 1;
 
     protected BaseEventSimulation(int seed) : base(seed)
     {
+    }
+
+    public void SetSpeed(double speed)
+    {
+        if (speed > 0)
+            Speed = speed;
     }
 
     public bool PlanEvent(EventCore newEvent)
@@ -47,9 +56,22 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
         _firstSleepPlanned = false;
     }
 
+    public void RegisterGUIDelegate(ISimGuiDelegate simGuiDelegate)
+    {
+        _simGUIDelegates.Add(simGuiDelegate);
+    }
+
     public void StopReplication()
     {
         _isReplicationRunning = false;
+    }
+
+    public void RefreshGUI()
+    {
+        foreach (var gui in _simGUIDelegates)
+        {
+            gui.RefreshGUI();
+        }
     }
 
     protected override void BeforeReplication()
@@ -57,6 +79,7 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
         SimTime = 0;
         _isReplicationRunning = true;
         _eventsQueue.Clear();
+        _firstSleepPlanned = false;
     }
 
     protected override void DoReplication()
