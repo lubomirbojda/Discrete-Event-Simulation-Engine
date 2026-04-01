@@ -1,4 +1,5 @@
 using DS_SEM_2.EventSimulation;
+using DS_SEM_2.EventSimulation.AirportSimulation;
 using DS_SEM_2.EventSimulation.TestEvenSim;
 
 namespace GUI;
@@ -14,22 +15,22 @@ public partial class SimMainForm : Form, ISimGuiDelegate
     private Label lblSimTime;
     private FlowLayoutPanel topPanel;
 
-    private DataGridView dgvFront1;
-    private DataGridView dgvFront2;
-    private DataGridView dgvBatoziny1;
-    private DataGridView dgvBatoziny2;
+    private DataGridView dgvQueuePassLuggage_1;
+    private DataGridView dgvQueueRTG_1;
+    private DataGridView dgvLuggageBefore_1;
+    private DataGridView dgvLuggageAfter_1;
 
-    private DataGridView dgvFront1_2;
-    private DataGridView dgvFront2_2;
-    private DataGridView dgvBatoziny1_2;
-    private DataGridView dgvBatoziny2_2;
+    private DataGridView dgvQueuePassLuggage_2;
+    private DataGridView dgvQueueRTG_2;
+    private DataGridView dgvLuggageBefore_2;
+    private DataGridView dgvLuggageAfter_2;
 
     private FlowLayoutPanel gridPanel;
 
     private readonly double[] _speedSteps = { 0.05, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 10, 25, 50, 100, 1000, 5000, 10000, 100_000, 1_000_000, double.MaxValue };
     private int _currentSpeedIndex = 5;
 
-    private TestSimulation _simulation = new(100, 100000);
+    private AirportSim _simulation = new(100);
 
     public SimMainForm()
     {
@@ -70,25 +71,25 @@ public partial class SimMainForm : Form, ISimGuiDelegate
 
         gridPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, WrapContents = true };
 
-        dgvFront1 = CreateGrid("id cestujuceho", "id batozin");
-        dgvFront2 = CreateGrid("id cestujuceho", "id batozin");
-        dgvBatoziny1 = CreateGrid("id batoziny", "id osoby");
-        dgvBatoziny2 = CreateGrid("id batoziny", "id osoby");
+        dgvQueuePassLuggage_1 = CreateGrid("id cestujuceho", "id batozin");
+        dgvQueueRTG_1 = CreateGrid("id cestujuceho", "id batozin");
+        dgvLuggageBefore_1 = CreateGrid("id batoziny", "id osoby");
+        dgvLuggageAfter_1 = CreateGrid("id batoziny", "id osoby");
 
-        dgvFront1_2 = CreateGrid("id cestujuceho", "id batozin");
-        dgvFront2_2 = CreateGrid("id cestujuceho", "id batozin");
-        dgvBatoziny1_2 = CreateGrid("id batoziny", "id osoby");
-        dgvBatoziny2_2 = CreateGrid("id batoziny", "id osoby");
+        dgvQueuePassLuggage_2 = CreateGrid("id cestujuceho", "id batozin");
+        dgvQueueRTG_2 = CreateGrid("id cestujuceho", "id batozin");
+        dgvLuggageBefore_2 = CreateGrid("id batoziny", "id osoby");
+        dgvLuggageAfter_2 = CreateGrid("id batoziny", "id osoby");
 
-        gridPanel.Controls.Add(CreateGridContainer("front 1", dgvFront1));
-        gridPanel.Controls.Add(CreateGridContainer("front 2", dgvFront2));
-        gridPanel.Controls.Add(CreateGridContainer("batoziny 1", dgvBatoziny1));
-        gridPanel.Controls.Add(CreateGridContainer("batoziny 2", dgvBatoziny2));
+        gridPanel.Controls.Add(CreateGridContainer("Front(1) odovzdávanie batožiny", dgvQueuePassLuggage_1));
+        gridPanel.Controls.Add(CreateGridContainer("Front(1) pred RTG", dgvQueueRTG_1));
+        gridPanel.Controls.Add(CreateGridContainer("Front(1) batožín pred skenerom", dgvLuggageBefore_1));
+        gridPanel.Controls.Add(CreateGridContainer("Front(1) batožín po skeneri", dgvLuggageAfter_1));
 
-        gridPanel.Controls.Add(CreateGridContainer("front 1 (2)", dgvFront1_2));
-        gridPanel.Controls.Add(CreateGridContainer("front 2 (2)", dgvFront2_2));
-        gridPanel.Controls.Add(CreateGridContainer("batoziny 1 (2)", dgvBatoziny1_2));
-        gridPanel.Controls.Add(CreateGridContainer("batoziny 2 (2)", dgvBatoziny2_2));
+        gridPanel.Controls.Add(CreateGridContainer("Front(2) odovzdávanie batožiny", dgvQueuePassLuggage_2));
+        gridPanel.Controls.Add(CreateGridContainer("Front(2) pred RTG", dgvQueueRTG_2));
+        gridPanel.Controls.Add(CreateGridContainer("Front(2) batožín pred skenerom", dgvLuggageBefore_2));
+        gridPanel.Controls.Add(CreateGridContainer("Front(2) batožín po skeneri", dgvLuggageAfter_2));
 
         this.Controls.Add(gridPanel);
         this.Controls.Add(topPanel);
@@ -147,6 +148,8 @@ public partial class SimMainForm : Form, ISimGuiDelegate
     private void StartSimulation()
     {
         btnPauseResume.Enabled = true;
+        btnPauseResume.Text = "Pozastav";
+        _simulation = new(100);
         _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
         _simulation.DisableTurboMode();
         _simulation.RegisterGUIDelegate(this);
@@ -159,10 +162,12 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         if (btnPauseResume.Text == "Pozastav")
         {
             btnPauseResume.Text = "Pokračuj";
+            _simulation.PauseSimulation();
         }
         else
         {
             btnPauseResume.Text = "Pozastav";
+            _simulation.ResumeSimulation();
         }
     }
 
@@ -174,8 +179,69 @@ public partial class SimMainForm : Form, ISimGuiDelegate
             return;
         }
 
-        lblSimTime.Text = $"Simulačný čas: {_simulation.SimTime:F2}" + " replikacia: " + _simulation.CurrentReplication
-            + " served in repl: " + _simulation.ServedCustomers;
+        lblSimTime.Text = $"Simulačný čas: {_simulation.SimTime:F2}" + " replikacia: " + _simulation.CurrentReplication;
+        //Queues luggage delivery
+        dgvQueuePassLuggage_1.SuspendLayout();
+        dgvQueuePassLuggage_1.Rows.Clear();
+        dgvQueuePassLuggage_2.SuspendLayout();
+        dgvQueuePassLuggage_2.Rows.Clear();
+        foreach (var passenger in _simulation.PassengersFlow1.PassengersLuggageQueue)
+        {
+            dgvQueuePassLuggage_1.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
+        }
+        foreach (var passenger in _simulation.PassengersFlow2.PassengersLuggageQueue)
+        {
+            dgvQueuePassLuggage_2.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
+        }
+        dgvQueuePassLuggage_1.ResumeLayout();
+        dgvQueuePassLuggage_2.ResumeLayout();
 
+        //Queues RTG
+        dgvQueueRTG_1.SuspendLayout();
+        dgvQueueRTG_1.Rows.Clear();
+        dgvQueueRTG_2.SuspendLayout();
+        dgvQueueRTG_2.Rows.Clear();
+        foreach (var passenger in _simulation.PassengersFlow1.PassengersRTGQueue)
+        {
+            dgvQueueRTG_1.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
+        }
+        foreach (var passenger in _simulation.PassengersFlow2.PassengersRTGQueue)
+        {
+            dgvQueueRTG_2.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
+        }
+        dgvQueueRTG_1.ResumeLayout();
+        dgvQueueRTG_2.ResumeLayout();
+
+        //Queues luggage before scanner
+        dgvLuggageBefore_1.SuspendLayout();
+        dgvLuggageBefore_1.Rows.Clear();
+        dgvLuggageBefore_2.SuspendLayout();
+        dgvLuggageBefore_2.Rows.Clear();
+        foreach (var luggage in _simulation.PassengersFlow1.LuggagesBefore)
+        {
+            dgvLuggageBefore_1.Rows.Add(luggage.ID, luggage.Passenger.Id);
+        }
+        foreach (var luggage in _simulation.PassengersFlow2.LuggagesBefore)
+        {
+            dgvLuggageBefore_2.Rows.Add(luggage.ID, luggage.Passenger.Id);
+        }
+        dgvLuggageBefore_1.ResumeLayout();
+        dgvLuggageBefore_2.ResumeLayout();
+
+        //Queues luggage after scanner
+        dgvLuggageAfter_1.SuspendLayout();
+        dgvLuggageAfter_1.Rows.Clear();
+        dgvLuggageAfter_2.SuspendLayout();
+        dgvLuggageAfter_2.Rows.Clear();
+        foreach (var luggage in _simulation.PassengersFlow1.LuggagesAfter)
+        {
+            dgvLuggageAfter_1.Rows.Add(luggage.ID, luggage.Passenger.Id);
+        }
+        foreach (var luggage in _simulation.PassengersFlow2.LuggagesAfter)
+        {
+            dgvLuggageAfter_2.Rows.Add(luggage.ID, luggage.Passenger.Id);
+        }
+        dgvLuggageAfter_1.ResumeLayout();
+        dgvLuggageAfter_2.ResumeLayout();
     }
 }

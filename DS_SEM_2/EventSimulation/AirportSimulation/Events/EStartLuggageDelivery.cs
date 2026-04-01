@@ -1,4 +1,4 @@
-namespace DS_SEM_2.EventSimulation.AirportSimulation;
+namespace DS_SEM_2.EventSimulation.AirportSimulation.Events;
 
 public class EStartLuggageDelivery : PassengerEvent
 {
@@ -9,12 +9,12 @@ public class EStartLuggageDelivery : PassengerEvent
     public override void Execute()
     {
         //Put as many luggages as can
-        for (int i = Passenger_.Luggages.Count; i >= 0; i--)
+        for (int i = 0; i < Passenger_.Luggages.Count; i++)
         {
             if (Passenger_.PassengerFlow.LuggagesBefore.Count < Simulation.MaxLuggageBefore)
             {
                 Passenger_.PassengerFlow.LuggagesBefore.Enqueue(Passenger_.Luggages[i]);
-                Passenger_.Luggages.RemoveAt(i);
+                Passenger_.LuggageCurrent--;
             }
         }
 

@@ -1,4 +1,4 @@
-﻿namespace DS_SEM_2.EventSimulation.AirportSimulation;
+namespace DS_SEM_2.EventSimulation.AirportSimulation.Events;
 
 public abstract class LuggageEvent : BaseEvent<AirportSim>
 {

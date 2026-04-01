@@ -12,7 +12,7 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
 
     private bool _isReplicationRunning = true;
 
-    private bool _isStopped = false;
+    private bool _isPaused = false;
 
     private List<ISimGuiDelegate> _simGUIDelegates = new();
 
@@ -30,6 +30,16 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
     {
         if (speed > 0)
             Speed = speed;
+    }
+
+    public void PauseSimulation()
+    {
+        _isPaused = true;
+    }
+
+    public void ResumeSimulation()
+    {
+        _isPaused = false;
     }
 
     public bool PlanEvent(EventCore newEvent)
@@ -86,7 +96,7 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
     {
         while (_eventsQueue.Count > 0 && _isReplicationRunning)
         {
-            while (_isStopped)
+            while (_isPaused)
             {
                 Thread.Sleep(100);
             }
