@@ -35,11 +35,8 @@ public class EPassengerArrival : PassengerEvent
         //Can plan luggage delivery
         if (Passenger_.PassengerFlow.PassengersLuggageQueue.Peek() == Passenger_)
         {
-            if (Passenger_.PassengerFlow.LuggagesBefore.Count < Simulation.MaxLuggageBefore)
-            {
-                EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, Passenger_);
-                Simulation.PlanEvent(startLugDel);
-            }
+            EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, Passenger_);
+            Simulation.PlanEvent(startLugDel);
         }
 
         //Plan next passenger arrival

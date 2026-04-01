@@ -8,12 +8,17 @@ public class EStartLuggageDelivery : PassengerEvent
 
     public override void Execute()
     {
-        for (int i = Passenger_.Luggage.IDs.Count; i >= 0; i--)
+        //Put as many luggages as can
+        for (int i = Passenger_.Luggages.Count; i >= 0; i--)
         {
-            if (Passenger_.PassengerFlow.LuggagesBefore.Count )
+            if (Passenger_.PassengerFlow.LuggagesBefore.Count < Simulation.MaxLuggageBefore)
             {
-                
+                Passenger_.PassengerFlow.LuggagesBefore.Enqueue(Passenger_.Luggages[i]);
+                Passenger_.Luggages.RemoveAt(i);
             }
         }
+
+        EEndLuggageDelivery endLugDel = new(ExecuteTime, Simulation, Passenger_);
+        Simulation.PlanEvent(endLugDel);
     }
 }

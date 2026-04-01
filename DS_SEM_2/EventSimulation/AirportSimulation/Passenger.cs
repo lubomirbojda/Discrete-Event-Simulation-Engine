@@ -4,16 +4,18 @@ public class Passenger
 {
     public int Id { get; private set; }
     public double ArrivalTime { get; set; }
-    public Luggage Luggage { get; private set; }
+    public List<Luggage> Luggages { get; private set; } = new();
     public PassengersFlow PassengerFlow { get; set; } = new();
+
+    public int LuggageTotal { get; private set; }
 
     public Passenger(int id, int[] luggageIds)
     {
         Id = id;
-        Luggage = new Luggage(this);
+        LuggageTotal = luggageIds.Length;
         foreach (var luggageId in luggageIds)
         {
-            Luggage.AddLuggage(luggageId);
+            Luggages.Add(new Luggage(this, luggageId));
         }
     }
 
