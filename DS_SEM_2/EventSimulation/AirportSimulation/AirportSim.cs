@@ -34,6 +34,15 @@ public class AirportSim : BaseEventSimulation
     public SimpleStatistics AverageTimeInSystem { get; private set; } = new();
     private SimpleStatistics _averageTimeInSystem = new();
 
+    public TimeStatistics AverageLuggageQueueLength { get; private set; } = new();
+    private SimpleStatistics _averageLuggageQueueLength = new();
+
+    public SimpleStatistics AverageServedPassengers { get; private set; } = new();
+    private SimpleStatistics _averageServedPassengers = new();
+
+    public TimeStatistics AverageLuggageWaitingQueueLength { get; private set; } = new();
+    private SimpleStatistics _averageLuggageWaitingQueueLength = new();
+
     public AirportSim(int seed) : base(seed)
     {
         FlowChooseRand = new Random(_seedGenerator.Next());
@@ -75,12 +84,14 @@ public class AirportSim : BaseEventSimulation
         Passenger nextPass = new(GetNextPassengerID(), Passenger.CreateLuggage(this));
         EPassengerArrival nextArrival = new(nextArrivalTime, this, nextPass);
         PlanEvent(nextArrival);
-        CamePass++;
     }
 
     protected override void AfterReplication()
     {
         _averageTimeInSystem.Add(AverageTimeInSystem.GetAverage());
+        _averageLuggageQueueLength.Add(AverageLuggageQueueLength.GetAverage(SimTime));
+        _averageServedPassengers.Add(ServedPassengers);
+        _averageLuggageWaitingQueueLength.Add(AverageLuggageWaitingQueueLength.GetAverage(SimTime));
 
         Console.WriteLine("Replikacia c. " + CurrentReplication + " hotova");
         Console.WriteLine("Prislo: " + CamePass);
@@ -88,14 +99,20 @@ public class AirportSim : BaseEventSimulation
         Console.WriteLine("End sim time: " + SimTime);
 
         AverageTimeInSystem.Reset();
+        AverageLuggageQueueLength.Reset();
+        AverageServedPassengers.Reset();
+        AverageLuggageWaitingQueueLength.Reset();
     }
 
     protected override void AfterSimulation()
     {
-        Console.WriteLine("Priemerny cas zakaznika v systeme: " + _averageTimeInSystem.GetAverage());
+        Console.WriteLine("Priemerny cas zakaznika v systeme: " + _averageTimeInSystem.GetAverage() / 60 + " minut");
+        Console.WriteLine("Primerna dlzka radu pred batozinami: " + _averageLuggageQueueLength.GetAverage());
+        Console.WriteLine("Priemerny pocet obsluzenych zakaznikov: " + _averageServedPassengers.GetAverage());
+        Console.WriteLine("Priemerna dlzka radu cakajucich na batoziny: " + _averageLuggageWaitingQueueLength.GetAverage());
     }
 
-    protected override void BeforeSimulation()
+    protected override void BeforeSimulation() 
     {
         SetMaxSimulationTime(24*60*60);
     }

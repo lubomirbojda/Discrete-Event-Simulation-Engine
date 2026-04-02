@@ -9,8 +9,8 @@ public class PassengersFlow
     public Queue<Passenger> PassengersWaitingLuggageQueue { get; private set; } = new();
 
     public bool IsLuggageScanAvail { get; set; } = true;
+    public bool IsScannerBusy { get; set; } = false;
     public bool IsRTGAvail { get; set; } = true;
-    public bool IsWorkerAvail { get; set; } = true;
 
     public void Reset()
     {
@@ -20,7 +20,7 @@ public class PassengersFlow
         LuggagesAfterQueue.Clear();
         PassengersWaitingLuggageQueue.Clear();
         IsLuggageScanAvail = true;
-        IsWorkerAvail = true;
         IsRTGAvail = true;
+        IsScannerBusy = false;
     }
 }

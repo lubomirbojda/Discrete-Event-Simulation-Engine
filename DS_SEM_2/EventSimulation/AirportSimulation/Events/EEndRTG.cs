@@ -1,4 +1,4 @@
-﻿namespace DS_SEM_2.EventSimulation.AirportSimulation.Events;
+namespace DS_SEM_2.EventSimulation.AirportSimulation.Events;
 
 public class EEndRTG : PassengerEvent
 {
@@ -8,6 +8,7 @@ public class EEndRTG : PassengerEvent
 
     public override void Execute()
     {
+        var flow = Passenger_.PassengerFlow;
         var r = Simulation.PersonalScanRand.NextDouble();
         if (r < 0.19)
         {
@@ -16,29 +17,29 @@ public class EEndRTG : PassengerEvent
         }
         else
         {
-            Passenger_.PassengerFlow.IsRTGAvail = true;
+            flow.IsRTGAvail = true;
+            if (flow.PassengersRTGQueue.Count > 0)
+            {
+                var nextPass = flow.PassengersRTGQueue.Dequeue();
+                EStartRTG startRTG = new(ExecuteTime, Simulation, nextPass);
+                Simulation.PlanEvent(startRTG);
+            }
 
-            if (Passenger_.LuggageTotal == 0)
+            if (Passenger_.Luggages.Count == 0)
             {
                 EPassengerLeave passLeave = new(ExecuteTime, Simulation, Passenger_);
                 Simulation.PlanEvent(passLeave);
             }
             else
             {
-                Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Enqueue(Passenger_);
-                if (Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Peek() == Passenger_)
+                flow.PassengersWaitingLuggageQueue.Enqueue(Passenger_);
+                Simulation.AverageLuggageWaitingQueueLength.Add(flow.PassengersWaitingLuggageQueue.Count, ExecuteTime);
+                if (flow.PassengersWaitingLuggageQueue.Peek() == Passenger_)
                 {
                     Passenger_.IsReadyToLeave = true;
                     EPassengerLeave passLeave = new(ExecuteTime, Simulation, Passenger_);
                     Simulation.PlanEvent(passLeave);
                 }
-            }
-            
-            if (Passenger_.PassengerFlow.PassengersRTGQueue.Count > 0)
-            {
-                var nextPass = Passenger_.PassengerFlow.PassengersRTGQueue.Dequeue();
-                EStartRTG startRTG = new(ExecuteTime, Simulation, nextPass);
-                Simulation.PlanEvent(startRTG);
             }
         }
     }

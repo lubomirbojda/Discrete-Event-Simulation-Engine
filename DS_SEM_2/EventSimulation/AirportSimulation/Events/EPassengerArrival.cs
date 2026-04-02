@@ -11,7 +11,7 @@ public class EPassengerArrival : PassengerEvent
         //Set passenger arrival time
         Passenger_.ArrivalTime = Simulation.SimTime;
         Simulation.CamePass++;
-        if (Simulation.CamePass == 5000)
+        if (Simulation.CamePass == 2000)
         {
             Console.WriteLine();
         }
@@ -36,8 +36,9 @@ public class EPassengerArrival : PassengerEvent
                 Passenger_.PassengerFlow = Simulation.PassengersFlow2;
         }
         Passenger_.PassengerFlow.PassengersLuggageQueue.Enqueue(Passenger_);
+        Simulation.AverageLuggageQueueLength.Add(Passenger_.PassengerFlow.PassengersLuggageQueue.Count, ExecuteTime);
 
-        //Can plan luggage delivery
+        //Can plan start luggage delivery
         if (Passenger_.PassengerFlow.PassengersLuggageQueue.Peek() == Passenger_)
         {
             EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, Passenger_);

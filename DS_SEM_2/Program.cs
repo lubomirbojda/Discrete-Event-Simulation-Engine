@@ -16,6 +16,6 @@ public class Program
         //test.RunSimulation(100);
 
         AirportSim sim = new(r.Next());
-        sim.RunSimulation(100);
+        sim.RunSimulation(1000);
     }
 }

@@ -8,24 +8,27 @@ public class EEndLuggageScan : LuggageEvent
 
     public override void Execute()
     {
-        Luggage_.Passenger.PassengerFlow.LuggagesAfterQueue.Enqueue(Luggage_);
-        Luggage_.Passenger.PassengerFlow.IsLuggageScanAvail = true;
+        var flow = Luggage_.Passenger.PassengerFlow;
+        flow.LuggagesAfterQueue.Enqueue(Luggage_);
+        flow.IsScannerBusy = false;
 
         //Plan passenger leave if all luggage is scanned - else set ready to leave on true and put to leave queue
-        //not implemented yet
         if (Luggage_.Passenger.IsReadyToLeave)
         {
             EPassengerLeave passLeave = new(ExecuteTime, Simulation, Luggage_.Passenger);
             Simulation.PlanEvent(passLeave);
         }
-        
-        //Plan start luggage scan for next luggage if there is any
-        if (Luggage_.Passenger.PassengerFlow.LuggagesBeforeQueue.Count > 0
-            && Luggage_.Passenger.PassengerFlow.LuggagesAfterQueue.Count < Simulation.MaxLuggageAfter)
+
+
+        if (flow.LuggagesAfterQueue.Count < Simulation.MaxLuggageAfter)
         {
-            var luggage = Luggage_.Passenger.PassengerFlow.LuggagesBeforeQueue.Dequeue();
-            EStartLuggageScan startLugScan = new(ExecuteTime, Simulation, luggage);
-            Simulation.PlanEvent(startLugScan);
-        }
+            if (flow.LuggagesBeforeQueue.Count > 0)
+            {
+                flow.IsScannerBusy = true;
+                var luggage = flow.LuggagesBeforeQueue.Dequeue();
+                EStartLuggageScan startLugScan = new(ExecuteTime, Simulation, luggage);
+                Simulation.PlanEvent(startLugScan);
+            }
+        }   
     }
 }

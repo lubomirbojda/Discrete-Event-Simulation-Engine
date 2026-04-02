@@ -8,17 +8,17 @@ public class EStartLuggageScan : LuggageEvent
 
     public override void Execute()
     {
+        var flow = Luggage_.Passenger.PassengerFlow;
         //Set scanner availability to false and plan end of luggage scan
-        Luggage_.Passenger.PassengerFlow.IsLuggageScanAvail = false;
+        flow.IsScannerBusy = true;
         var scanTime = Simulation.LuggageScanGen.GenerateNext();
         EEndLuggageScan endLugScan = new(ExecuteTime + scanTime, Simulation, Luggage_);
         Simulation.PlanEvent(endLugScan);
 
-        //Plan start luggage delivery if there is passenger with luggage in the queue and luggage queue before is not full
-        if (Luggage_.Passenger.PassengerFlow.PassengersLuggageQueue.Count > 0
-            && Luggage_.Passenger.PassengerFlow.LuggagesBeforeQueue.Count < Simulation.MaxLuggageBefore)
+        if (flow.PassengersLuggageQueue.Count > 0
+            && flow.LuggagesAfterQueue.Count < Simulation.MaxLuggageAfter)
         {
-            var passenger = Luggage_.Passenger.PassengerFlow.PassengersLuggageQueue.Peek();
+            var passenger = flow.PassengersLuggageQueue.Peek();
             EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, passenger);
             Simulation.PlanEvent(startLugDel);
         }

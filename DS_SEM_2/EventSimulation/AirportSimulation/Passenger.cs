@@ -7,8 +7,8 @@ public class Passenger
     public List<Luggage> Luggages { get; private set; } = new();
     public PassengersFlow PassengerFlow { get; set; } = new();
 
-    public int LuggageTotal { get; private set; }
-    public int LuggageCurrent { get; set; }
+    public int LuggageDelivered { get; set; } = 0;
+    public int LuggagePickedFromScanner { get; set; } = 0;
     public bool IsReadyToLeave { get; set; } = false;
 
     public bool AlreadyLeft { get; set; } = false;
@@ -16,8 +16,6 @@ public class Passenger
     public Passenger(int id, int[] luggageIds)
     {
         Id = id;
-        LuggageTotal = luggageIds.Length;
-        LuggageCurrent = LuggageTotal;
         foreach (var luggageId in luggageIds)
         {
             Luggages.Add(new Luggage(this, luggageId));

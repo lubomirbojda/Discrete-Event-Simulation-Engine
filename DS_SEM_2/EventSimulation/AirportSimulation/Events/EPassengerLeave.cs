@@ -1,4 +1,4 @@
-﻿namespace DS_SEM_2.EventSimulation.AirportSimulation.Events;
+namespace DS_SEM_2.EventSimulation.AirportSimulation.Events;
 
 public class EPassengerLeave : PassengerEvent
 {
@@ -11,41 +11,53 @@ public class EPassengerLeave : PassengerEvent
         if (Passenger_.AlreadyLeft)
             return;
 
-        if (Passenger_.IsReadyToLeave && Passenger_.LuggageTotal > 0)
+        var flow = Passenger_.PassengerFlow;
+        if (Passenger_.IsReadyToLeave && Passenger_.Luggages.Count > 0)
         {
-            var luggageAfter = Passenger_.PassengerFlow.LuggagesAfterQueue;
-            var luggageBefore = Passenger_.PassengerFlow.LuggagesBeforeQueue;
+            var luggageAfter = flow.LuggagesAfterQueue;
+            var luggageBefore = flow.LuggagesBeforeQueue;
             while (luggageAfter.Count > 0 && luggageAfter.Peek().Passenger == Passenger_)
             {
-                if (luggageAfter.Count == Simulation.MaxLuggageAfter
+                luggageAfter.Dequeue();
+                Passenger_.LuggagePickedFromScanner++;
+                if (luggageAfter.Count < Simulation.MaxLuggageAfter
+                    && !flow.IsScannerBusy
                     && luggageBefore.Count > 0)
                 {
+                    flow.IsScannerBusy = true;
                     var nextLuggForScan = luggageBefore.Dequeue();
                     EStartLuggageScan startLugScan = new(ExecuteTime, Simulation, nextLuggForScan);
                     Simulation.PlanEvent(startLugScan);
                 }
-                luggageAfter.Dequeue();
-                Passenger_.LuggageCurrent++;
             }
         }
 
-        if (Passenger_.LuggageTotal == Passenger_.LuggageCurrent)
+        if (Passenger_.LuggagePickedFromScanner == Passenger_.Luggages.Count)
         {
-            //Passenger leaves system
-            if (Passenger_.LuggageTotal != 0)
+            if (Passenger_.Luggages.Count > 0)
             {
-                Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Dequeue();
-                if (Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Count > 0)
+                if (flow.PassengersWaitingLuggageQueue.Count > 0
+                    && flow.PassengersWaitingLuggageQueue.Peek() == Passenger_)
                 {
-                    var nextPass = Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Peek();
+                    flow.PassengersWaitingLuggageQueue.Dequeue();
+                    Simulation.AverageLuggageWaitingQueueLength.Add(Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Count, ExecuteTime);
+                }
+
+                if (flow.PassengersWaitingLuggageQueue.Count > 0)
+                {
+                    var nextPass = flow.PassengersWaitingLuggageQueue.Peek();
                     nextPass.IsReadyToLeave = true;
                     EPassengerLeave passLeave = new(ExecuteTime, Simulation, nextPass);
                     Simulation.PlanEvent(passLeave);
                 }
             }
-            Simulation.AverageTimeInSystem.Add(ExecuteTime - Passenger_.ArrivalTime);
-            Simulation.ServedPassengers++;
-            Passenger_.AlreadyLeft = true;
+
+            if (!Passenger_.AlreadyLeft)
+            {
+                Simulation.AverageTimeInSystem.Add(ExecuteTime - Passenger_.ArrivalTime);
+                Simulation.ServedPassengers++;
+                Passenger_.AlreadyLeft = true;
+            }
         }
     }
 }

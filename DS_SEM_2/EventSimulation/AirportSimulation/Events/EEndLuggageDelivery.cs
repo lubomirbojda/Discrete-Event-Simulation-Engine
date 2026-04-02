@@ -8,39 +8,39 @@ public class EEndLuggageDelivery : PassengerEvent
 
     public override void Execute()
     {
-        //If gave all luggage - dequeu, put to RTGQueue, possibly plan RTGStart event
-        if (Passenger_.LuggageCurrent == 0)
+        var flow = Passenger_.PassengerFlow;
+        //Delivered all luggages
+        if (Passenger_.LuggageDelivered == Passenger_.Luggages.Count)
         {
-            Passenger_.PassengerFlow.PassengersLuggageQueue.Dequeue();
-            Passenger_.PassengerFlow.PassengersRTGQueue.Enqueue(Passenger_);
-            if (Passenger_.PassengerFlow.PassengersRTGQueue.Peek() == Passenger_
-                && Passenger_.PassengerFlow.IsRTGAvail)
+            flow.PassengersLuggageQueue.Dequeue();
+            Simulation.AverageLuggageQueueLength.Add(flow.PassengersLuggageQueue.Count, ExecuteTime);
+            flow.PassengersRTGQueue.Enqueue(Passenger_);
+            if (flow.PassengersRTGQueue.Peek() == Passenger_
+                && flow.IsRTGAvail)
             {
-                Passenger_.PassengerFlow.IsRTGAvail = false;
-                EStartRTG startRTG = new(ExecuteTime, Simulation, Passenger_);
+                flow.IsRTGAvail = false;
+                var passenger = flow.PassengersRTGQueue.Dequeue();
+                EStartRTG startRTG = new(ExecuteTime, Simulation, passenger);
                 Simulation.PlanEvent(startRTG);
             }
 
-            //Plan start luggage delivery for next passenger
-            if (Passenger_.PassengerFlow.PassengersLuggageQueue.Count > 0)
+            if (flow.PassengersLuggageQueue.Count > 0)
             {
-                var nextPass = Passenger_.PassengerFlow.PassengersLuggageQueue.Peek();
+                var nextPass = flow.PassengersLuggageQueue.Peek();
                 EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, nextPass);
                 Simulation.PlanEvent(startLugDel);
             }
         }
 
-        //If no luggage is scanning now - plan scanning from queue
-        if (Passenger_.PassengerFlow.LuggagesBeforeQueue.Count > 0 
-            && Passenger_.PassengerFlow.LuggagesAfterQueue.Count < Simulation.MaxLuggageAfter
-            && Passenger_.PassengerFlow.IsLuggageScanAvail)
+        //Plan luggage scan if possible
+        if (flow.LuggagesBeforeQueue.Count > 0
+            && flow.LuggagesAfterQueue.Count < Simulation.MaxLuggageAfter
+            && !flow.IsScannerBusy)
         {
-            Passenger_.PassengerFlow.IsLuggageScanAvail = false;
-            var luggage = Passenger_.PassengerFlow.LuggagesBeforeQueue.Dequeue();
+            flow.IsScannerBusy = true;
+            var luggage = flow.LuggagesBeforeQueue.Dequeue();
             EStartLuggageScan startLugScan = new(ExecuteTime, Simulation, luggage);
             Simulation.PlanEvent(startLugScan);
         }
-
-        
     }
 }
