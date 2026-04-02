@@ -11,9 +11,9 @@ public class EStartLuggageDelivery : PassengerEvent
         //Put as many luggages as can
         for (int i = 0; i < Passenger_.Luggages.Count; i++)
         {
-            if (Passenger_.PassengerFlow.LuggagesBefore.Count < Simulation.MaxLuggageBefore)
+            if (Passenger_.PassengerFlow.LuggagesBeforeQueue.Count < Simulation.MaxLuggageBefore)
             {
-                Passenger_.PassengerFlow.LuggagesBefore.Enqueue(Passenger_.Luggages[i]);
+                Passenger_.PassengerFlow.LuggagesBeforeQueue.Enqueue(Passenger_.Luggages[i]);
                 Passenger_.LuggageCurrent--;
             }
         }

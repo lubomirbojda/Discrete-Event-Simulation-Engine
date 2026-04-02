@@ -11,6 +11,8 @@ public class Passenger
     public int LuggageCurrent { get; set; }
     public bool IsReadyToLeave { get; set; } = false;
 
+    public bool AlreadyLeft { get; set; } = false;
+
     public Passenger(int id, int[] luggageIds)
     {
         Id = id;
@@ -24,15 +26,7 @@ public class Passenger
 
     public static int[] CreateLuggage(AirportSim simulation)
     {
-        int count;
-        var r = simulation.LuggageCountRand.NextDouble();
-        if (r < 0.15)
-            count = 0;
-        else if (r < 0.83)
-            count = 1;
-        else
-            count = 2;
-
+        int count = simulation.LuggageCountGen.GenerateNext();
         var luggageIds = new int[count];
         for (int i = 0; i < count; i++)
         {

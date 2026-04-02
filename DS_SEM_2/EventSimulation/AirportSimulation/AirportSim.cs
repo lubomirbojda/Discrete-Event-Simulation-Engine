@@ -1,5 +1,8 @@
 using DS_SEM_2.EventSimulation.AirportSimulation.Events;
+using DS_SEM_2.EventSimulation.Statistics;
+using DS_SEM_2.Generators.Empiric.Discrete;
 using DS_SEM_2.Generators.Exponential;
+using DS_SEM_2.Generators.Triangular;
 using DS_SEM_2.Generators.Uniform;
 
 namespace DS_SEM_2.EventSimulation.AirportSimulation;
@@ -9,12 +12,17 @@ public class AirportSim : BaseEventSimulation
     public PassengersFlow PassengersFlow1 { get; private set; } = new();
     public PassengersFlow PassengersFlow2 { get; private set; } = new();
 
-    public Random FlowChooser { get; private set; }
-    public Random LuggageCountRand { get; private set; }
+    public Random FlowChooseRand { get; private set; }
+    public Random PersonalScanRand { get; private set; }
+    public DiscreteEmpiric LuggageCountGen { get; private set; }
 
     public ExponentialDist PassengerArrivalGen { get; private set; }
     public ContinuousUniform LuggageScanGen { get; private set; }
     public ContinuousUniform RTGScanGen { get; private set; }
+    public TriangularDist PersonalScanGen { get; private set; }
+
+    public int ServedPassengers { get; set; } = 0;
+    public int CamePass { get; set; } = 0;
 
     private int PassengerIDSeq = 0;
     private int LuggageIDSeq = 0;
@@ -22,13 +30,23 @@ public class AirportSim : BaseEventSimulation
     public int MaxLuggageBefore { get; private set; } = 4;
     public int MaxLuggageAfter { get; private set; } = 5;
 
+    //Statistics
+    public SimpleStatistics AverageTimeInSystem { get; private set; } = new();
+    private SimpleStatistics _averageTimeInSystem = new();
+
     public AirportSim(int seed) : base(seed)
     {
-        FlowChooser = new Random(_seedGenerator.Next());
-        LuggageCountRand = new Random(_seedGenerator.Next());
-        PassengerArrivalGen = new ExponentialDist(_seedGenerator, 0.025);
+        FlowChooseRand = new Random(_seedGenerator.Next());
+        LuggageCountGen = new DiscreteEmpiric(_seedGenerator, [
+            (0, 0, 0.15),
+            (1, 1, 0.68),
+            (2, 2, 0.17)
+            ]);
+        PassengerArrivalGen = new ExponentialDist(_seedGenerator, 1.0/15.0);
         LuggageScanGen = new ContinuousUniform(_seedGenerator, 9, 46);
         RTGScanGen = new ContinuousUniform(_seedGenerator, 6, 27);
+        PersonalScanRand = new Random(_seedGenerator.Next());
+        PersonalScanGen = new TriangularDist(_seedGenerator, 10, 120, 35);
     }
 
     public int GetNextPassengerID()
@@ -44,23 +62,41 @@ public class AirportSim : BaseEventSimulation
     protected override void BeforeReplication()
     {
         base.BeforeReplication();
+        LuggageIDSeq = 0;
+        PassengerIDSeq = 0;
+        CamePass = 0;
+        ServedPassengers = 0;
+        PassengersFlow1.Reset();
+        PassengersFlow2.Reset();
+
 
         var u = PassengerArrivalGen.GenerateNext();
         var nextArrivalTime = SimTime + u;
         Passenger nextPass = new(GetNextPassengerID(), Passenger.CreateLuggage(this));
         EPassengerArrival nextArrival = new(nextArrivalTime, this, nextPass);
         PlanEvent(nextArrival);
+        CamePass++;
     }
 
     protected override void AfterReplication()
     {
+        _averageTimeInSystem.Add(AverageTimeInSystem.GetAverage());
+
+        Console.WriteLine("Replikacia c. " + CurrentReplication + " hotova");
+        Console.WriteLine("Prislo: " + CamePass);
+        Console.WriteLine("Obsluzenyvh bolo " + ServedPassengers);
+        Console.WriteLine("End sim time: " + SimTime);
+
+        AverageTimeInSystem.Reset();
     }
 
     protected override void AfterSimulation()
     {
+        Console.WriteLine("Priemerny cas zakaznika v systeme: " + _averageTimeInSystem.GetAverage());
     }
 
     protected override void BeforeSimulation()
     {
+        SetMaxSimulationTime(24*60*60);
     }
 }

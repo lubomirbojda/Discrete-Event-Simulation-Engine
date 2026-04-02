@@ -217,11 +217,11 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         dgvLuggageBefore_1.Rows.Clear();
         dgvLuggageBefore_2.SuspendLayout();
         dgvLuggageBefore_2.Rows.Clear();
-        foreach (var luggage in _simulation.PassengersFlow1.LuggagesBefore)
+        foreach (var luggage in _simulation.PassengersFlow1.LuggagesBeforeQueue)
         {
             dgvLuggageBefore_1.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
-        foreach (var luggage in _simulation.PassengersFlow2.LuggagesBefore)
+        foreach (var luggage in _simulation.PassengersFlow2.LuggagesBeforeQueue)
         {
             dgvLuggageBefore_2.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
@@ -233,11 +233,11 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         dgvLuggageAfter_1.Rows.Clear();
         dgvLuggageAfter_2.SuspendLayout();
         dgvLuggageAfter_2.Rows.Clear();
-        foreach (var luggage in _simulation.PassengersFlow1.LuggagesAfter)
+        foreach (var luggage in _simulation.PassengersFlow1.LuggagesAfterQueue)
         {
             dgvLuggageAfter_1.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
-        foreach (var luggage in _simulation.PassengersFlow2.LuggagesAfter)
+        foreach (var luggage in _simulation.PassengersFlow2.LuggagesAfterQueue)
         {
             dgvLuggageAfter_2.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }

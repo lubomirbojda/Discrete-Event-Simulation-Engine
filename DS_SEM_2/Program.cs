@@ -1,3 +1,4 @@
+using DS_SEM_2.EventSimulation.AirportSimulation;
 using DS_SEM_2.EventSimulation.TestEvenSim;
 using DS_SEM_2.Generators;
 
@@ -11,7 +12,10 @@ public class Program
         //GeneratorsTester.ExponentialDistributionTest(0.1, 10000);
 
         Random r = new();
-        TestSimulation test = new(r.Next(), 100000);
-        test.RunSimulation(100);
+        //TestSimulation test = new(r.Next(), 100000);
+        //test.RunSimulation(100);
+
+        AirportSim sim = new(r.Next());
+        sim.RunSimulation(100);
     }
 }

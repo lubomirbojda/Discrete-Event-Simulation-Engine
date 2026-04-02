@@ -14,9 +14,9 @@ public class EStartLuggageScan : LuggageEvent
         EEndLuggageScan endLugScan = new(ExecuteTime + scanTime, Simulation, Luggage_);
         Simulation.PlanEvent(endLugScan);
 
-        //Plan start luggage delivery if there is passenger with luggage in the queue and luggage queue before is full
+        //Plan start luggage delivery if there is passenger with luggage in the queue and luggage queue before is not full
         if (Luggage_.Passenger.PassengerFlow.PassengersLuggageQueue.Count > 0
-            && Luggage_.Passenger.PassengerFlow.LuggagesBefore.Count == Simulation.MaxLuggageBefore)
+            && Luggage_.Passenger.PassengerFlow.LuggagesBeforeQueue.Count < Simulation.MaxLuggageBefore)
         {
             var passenger = Luggage_.Passenger.PassengerFlow.PassengersLuggageQueue.Peek();
             EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, passenger);

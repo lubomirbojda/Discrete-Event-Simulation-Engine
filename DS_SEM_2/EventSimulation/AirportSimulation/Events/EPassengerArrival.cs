@@ -10,6 +10,11 @@ public class EPassengerArrival : PassengerEvent
     {
         //Set passenger arrival time
         Passenger_.ArrivalTime = Simulation.SimTime;
+        Simulation.CamePass++;
+        if (Simulation.CamePass == 5000)
+        {
+            Console.WriteLine();
+        }
 
         //Choose passenger flow
         var luggageQueueCount1 = Simulation.PassengersFlow1.PassengersLuggageQueue.Count;
@@ -24,7 +29,7 @@ public class EPassengerArrival : PassengerEvent
         }
         else
         {
-            var r = Simulation.FlowChooser.NextDouble();
+            var r = Simulation.FlowChooseRand.NextDouble();
             if (r < 0.5)
                 Passenger_.PassengerFlow = Simulation.PassengersFlow1;
             else
