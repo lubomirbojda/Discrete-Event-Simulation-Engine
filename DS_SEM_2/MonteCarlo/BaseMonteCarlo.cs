@@ -3,7 +3,7 @@ namespace DS_SEM_2.MonteCarlo;
 public abstract class BaseMonteCarlo
 {
     public Random _seedGenerator {  get; private set; }
-    private bool _isRunning = true;
+    public bool IsRunning { get; private set; } = true;
     public int CurrentReplication { get; protected set; }
     protected int _replicationsCount;
 
@@ -14,7 +14,7 @@ public abstract class BaseMonteCarlo
 
     public void StopSimulation()
     {
-        _isRunning = false;
+        IsRunning = false;
     }
 
     protected abstract void BeforeSimulation();
@@ -29,7 +29,7 @@ public abstract class BaseMonteCarlo
         BeforeSimulation();
 
         CurrentReplication = 0;
-        while (CurrentReplication < replicationsCount && _isRunning)
+        while (CurrentReplication < replicationsCount && IsRunning)
         {
             BeforeReplication();
 

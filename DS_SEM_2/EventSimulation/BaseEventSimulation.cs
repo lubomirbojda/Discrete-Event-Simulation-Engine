@@ -107,6 +107,9 @@ public abstract class BaseEventSimulation : BaseMonteCarlo
                 _firstSleepPlanned = true;
             }
 
+            if (!IsRunning)
+                return;
+
             var actualEvent = _eventsQueue.Dequeue();
 
             if (actualEvent.ExecuteTime > _maxSimTime)

@@ -54,7 +54,10 @@ public class EPassengerLeave : PassengerEvent
 
             if (!Passenger_.AlreadyLeft)
             {
-                Simulation.AverageTimeInSystem.Add(ExecuteTime - Passenger_.ArrivalTime);
+                var timeInSystem = ExecuteTime - Passenger_.ArrivalTime;
+                Simulation.AverageTimeInSystem.Add(timeInSystem);
+                EWarmUp warpUp = new(ExecuteTime, Simulation, timeInSystem);
+                Simulation.PlanEvent(warpUp);
                 Simulation.ServedPassengers++;
                 Passenger_.AlreadyLeft = true;
             }

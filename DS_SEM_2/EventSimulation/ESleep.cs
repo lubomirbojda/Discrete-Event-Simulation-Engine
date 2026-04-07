@@ -10,6 +10,9 @@ public class ESleep : BaseEvent<BaseEventSimulation>
 
     public override void Execute()
     {
+        if (Simulation.IsTurboActive)
+            return;
+
         ExecuteTime += _simTimeStep * Simulation.Speed;
         Simulation.PlanEvent(this);
         var sleepTime = (int)(_simTimeStep * 1000 / Simulation.Speed);

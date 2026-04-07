@@ -21,29 +21,46 @@ public class AirportSim : BaseEventSimulation
     public ContinuousUniform RTGScanGen { get; private set; }
     public TriangularDist PersonalScanGen { get; private set; }
 
+    private const int MAX_SIM_TIME = 24 * 60 * 60;
+
     public int ServedPassengers { get; set; } = 0;
     public int CamePass { get; set; } = 0;
 
     private int PassengerIDSeq = 0;
     private int LuggageIDSeq = 0;
 
-    public int MaxLuggageBefore { get; private set; } = 4;
-    public int MaxLuggageAfter { get; private set; } = 5;
+    public int MaxLuggageBefore { get; private set; }
+    public int MaxLuggageAfter { get; private set; }
 
     //Statistics
     public SimpleStatistics AverageTimeInSystem { get; private set; } = new();
-    private SimpleStatistics _averageTimeInSystem = new();
+    public SimpleStatistics AverageTimeInSystemFinal { get; private set; } = new();
 
     public TimeStatistics AverageLuggageQueueLength { get; private set; } = new();
-    private SimpleStatistics _averageLuggageQueueLength = new();
+    public SimpleStatistics AverageLuggageQueueLengthFinal { get; private set; } = new();
 
     public SimpleStatistics AverageServedPassengers { get; private set; } = new();
-    private SimpleStatistics _averageServedPassengers = new();
+    public SimpleStatistics AverageServedPassengersFinal { get; private set; } = new();
 
     public TimeStatistics AverageLuggageWaitingQueueLength { get; private set; } = new();
-    private SimpleStatistics _averageLuggageWaitingQueueLength = new();
+    public SimpleStatistics AverageLuggageWaitingQueueLengthFinal { get; private set; } = new();
 
-    public AirportSim(int seed) : base(seed)
+    public int WarmUpSamplesCount { get; } = 100;
+    public double WarpUpTolerance { get; } = 0.005;
+
+    public bool IsWarmedUp { get; set; } = false;
+    public double LastWarmUpAverage { get; set; } = 0;
+
+    public int WarpUpStabilityCount { get; } = 50;
+    public int WarpUpSuccessStabilityCounter { get; set; } = 0;
+
+    public Queue<double> WarmUpSamples { get; private set; } = new();
+
+    public int PassToWarmUp = 0;
+
+    public bool IsSimulationFinished { get; private set; } = false; 
+
+    public AirportSim(int seed, int capacity, int maxLuggageBefore, int maxLuggageAfter) : base(seed)
     {
         FlowChooseRand = new Random(_seedGenerator.Next());
         LuggageCountGen = new DiscreteEmpiric(_seedGenerator, [
@@ -51,11 +68,19 @@ public class AirportSim : BaseEventSimulation
             (1, 1, 0.68),
             (2, 2, 0.17)
             ]);
-        PassengerArrivalGen = new ExponentialDist(_seedGenerator, 1.0/15.0);
         LuggageScanGen = new ContinuousUniform(_seedGenerator, 9, 46);
         RTGScanGen = new ContinuousUniform(_seedGenerator, 6, 27);
         PersonalScanRand = new Random(_seedGenerator.Next());
         PersonalScanGen = new TriangularDist(_seedGenerator, 10, 120, 35);
+
+        MaxLuggageBefore = maxLuggageBefore;
+        MaxLuggageAfter = maxLuggageAfter;
+        
+        if (capacity <= 0)
+            capacity = 1;
+
+        double passArr = MAX_SIM_TIME / capacity;
+        PassengerArrivalGen = new ExponentialDist(_seedGenerator, 1.0 / passArr);
     }
 
     public int GetNextPassengerID()
@@ -77,6 +102,11 @@ public class AirportSim : BaseEventSimulation
         ServedPassengers = 0;
         PassengersFlow1.Reset();
         PassengersFlow2.Reset();
+        IsWarmedUp = false;
+        LastWarmUpAverage = 0;
+        WarmUpSamples.Clear();
+
+        PassToWarmUp = 0;
 
 
         var u = PassengerArrivalGen.GenerateNext();
@@ -88,32 +118,44 @@ public class AirportSim : BaseEventSimulation
 
     protected override void AfterReplication()
     {
-        _averageTimeInSystem.Add(AverageTimeInSystem.GetAverage());
-        _averageLuggageQueueLength.Add(AverageLuggageQueueLength.GetAverage(SimTime));
-        _averageServedPassengers.Add(ServedPassengers);
-        _averageLuggageWaitingQueueLength.Add(AverageLuggageWaitingQueueLength.GetAverage(SimTime));
+        if (!IsRunning)
+            return;
 
-        Console.WriteLine("Replikacia c. " + CurrentReplication + " hotova");
-        Console.WriteLine("Prislo: " + CamePass);
-        Console.WriteLine("Obsluzenyvh bolo " + ServedPassengers);
-        Console.WriteLine("End sim time: " + SimTime);
+        AverageTimeInSystemFinal.Add(AverageTimeInSystem.GetAverage());
+        AverageLuggageQueueLengthFinal.Add(AverageLuggageQueueLength.GetAverage(SimTime));
+        AverageServedPassengersFinal.Add(ServedPassengers);
+        AverageLuggageWaitingQueueLengthFinal.Add(AverageLuggageWaitingQueueLength.GetAverage(SimTime));
 
-        AverageTimeInSystem.Reset();
-        AverageLuggageQueueLength.Reset();
-        AverageServedPassengers.Reset();
-        AverageLuggageWaitingQueueLength.Reset();
+        Console.WriteLine("pass to warmup: " + PassToWarmUp);
+
+        ResetStatisticsAfterRep();
     }
 
     protected override void AfterSimulation()
     {
-        Console.WriteLine("Priemerny cas zakaznika v systeme: " + _averageTimeInSystem.GetAverage() / 60 + " minut");
-        Console.WriteLine("Primerna dlzka radu pred batozinami: " + _averageLuggageQueueLength.GetAverage());
-        Console.WriteLine("Priemerny pocet obsluzenych zakaznikov: " + _averageServedPassengers.GetAverage());
-        Console.WriteLine("Priemerna dlzka radu cakajucich na batoziny: " + _averageLuggageWaitingQueueLength.GetAverage());
+        IsSimulationFinished = true;
+        RefreshGUI();
     }
 
     protected override void BeforeSimulation() 
     {
-        SetMaxSimulationTime(24*60*60);
+        SetMaxSimulationTime(MAX_SIM_TIME);
+        IsSimulationFinished = false;
+    }
+
+    public void ResetStatistics(double time)
+    {
+        AverageTimeInSystem.Reset();
+        AverageLuggageQueueLength.ResetAtTime(time);
+        AverageServedPassengers.Reset();
+        AverageLuggageWaitingQueueLength.ResetAtTime(time);
+    }
+
+    public void ResetStatisticsAfterRep()
+    {
+        AverageTimeInSystem.Reset();
+        AverageLuggageQueueLength.Reset();
+        AverageServedPassengers.Reset();
+        AverageLuggageWaitingQueueLength.Reset();
     }
 }
