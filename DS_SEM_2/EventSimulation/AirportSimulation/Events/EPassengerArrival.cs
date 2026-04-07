@@ -32,7 +32,8 @@ public class EPassengerArrival : PassengerEvent
                 Passenger_.PassengerFlow = Simulation.PassengersFlow2;
         }
         Passenger_.PassengerFlow.PassengersLuggageQueue.Enqueue(Passenger_);
-        Simulation.AverageLuggageQueueLength.Add(Passenger_.PassengerFlow.PassengersLuggageQueue.Count, ExecuteTime);
+        var luggageQueueCountSum = Simulation.PassengersFlow1.PassengersLuggageQueue.Count + Simulation.PassengersFlow2.PassengersLuggageQueue.Count;
+        Simulation.AverageLuggageQueueLength.Add(luggageQueueCountSum, ExecuteTime);
 
         //Can plan start luggage delivery
         if (Passenger_.PassengerFlow.PassengersLuggageQueue.Peek() == Passenger_)

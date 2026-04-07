@@ -39,12 +39,11 @@ public class AirportSim : BaseEventSimulation
     public TimeStatistics AverageLuggageQueueLength { get; private set; } = new();
     public SimpleStatistics AverageLuggageQueueLengthFinal { get; private set; } = new();
 
-    public SimpleStatistics AverageServedPassengers { get; private set; } = new();
-    public SimpleStatistics AverageServedPassengersFinal { get; private set; } = new();
-
     public TimeStatistics AverageLuggageWaitingQueueLength { get; private set; } = new();
     public SimpleStatistics AverageLuggageWaitingQueueLengthFinal { get; private set; } = new();
 
+
+    //Warm-up
     public int WarmUpSamplesCount { get; } = 100;
     public double WarpUpTolerance { get; } = 0.005;
 
@@ -55,8 +54,6 @@ public class AirportSim : BaseEventSimulation
     public int WarpUpSuccessStabilityCounter { get; set; } = 0;
 
     public Queue<double> WarmUpSamples { get; private set; } = new();
-
-    public int PassToWarmUp = 0;
 
     public bool IsSimulationFinished { get; private set; } = false; 
 
@@ -79,7 +76,7 @@ public class AirportSim : BaseEventSimulation
         if (capacity <= 0)
             capacity = 1;
 
-        double passArr = MAX_SIM_TIME / capacity;
+        double passArr = MAX_SIM_TIME / (double)capacity;
         PassengerArrivalGen = new ExponentialDist(_seedGenerator, 1.0 / passArr);
     }
 
@@ -106,8 +103,6 @@ public class AirportSim : BaseEventSimulation
         LastWarmUpAverage = 0;
         WarmUpSamples.Clear();
 
-        PassToWarmUp = 0;
-
 
         var u = PassengerArrivalGen.GenerateNext();
         var nextArrivalTime = SimTime + u;
@@ -123,10 +118,7 @@ public class AirportSim : BaseEventSimulation
 
         AverageTimeInSystemFinal.Add(AverageTimeInSystem.GetAverage());
         AverageLuggageQueueLengthFinal.Add(AverageLuggageQueueLength.GetAverage(SimTime));
-        AverageServedPassengersFinal.Add(ServedPassengers);
         AverageLuggageWaitingQueueLengthFinal.Add(AverageLuggageWaitingQueueLength.GetAverage(SimTime));
-
-        Console.WriteLine("pass to warmup: " + PassToWarmUp);
 
         ResetStatisticsAfterRep();
     }
@@ -147,15 +139,13 @@ public class AirportSim : BaseEventSimulation
     {
         AverageTimeInSystem.Reset();
         AverageLuggageQueueLength.ResetAtTime(time);
-        AverageServedPassengers.Reset();
         AverageLuggageWaitingQueueLength.ResetAtTime(time);
     }
 
-    public void ResetStatisticsAfterRep()
+    private void ResetStatisticsAfterRep()
     {
         AverageTimeInSystem.Reset();
         AverageLuggageQueueLength.Reset();
-        AverageServedPassengers.Reset();
         AverageLuggageWaitingQueueLength.Reset();
     }
 }

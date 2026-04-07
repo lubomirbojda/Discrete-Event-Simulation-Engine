@@ -40,7 +40,9 @@ public class EPassengerLeave : PassengerEvent
                     && flow.PassengersWaitingLuggageQueue.Peek() == Passenger_)
                 {
                     flow.PassengersWaitingLuggageQueue.Dequeue();
-                    Simulation.AverageLuggageWaitingQueueLength.Add(Passenger_.PassengerFlow.PassengersWaitingLuggageQueue.Count, ExecuteTime);
+                    var luggageWaitQueueCountSum = Simulation.PassengersFlow1.PassengersWaitingLuggageQueue.Count
+                    + Simulation.PassengersFlow2.PassengersWaitingLuggageQueue.Count;
+                    Simulation.AverageLuggageWaitingQueueLength.Add(luggageWaitQueueCountSum, ExecuteTime);
                 }
 
                 if (flow.PassengersWaitingLuggageQueue.Count > 0)

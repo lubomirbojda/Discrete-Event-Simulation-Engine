@@ -2,13 +2,12 @@ using System.Data;
 using System.Reflection;
 using DS_SEM_2.EventSimulation;
 using DS_SEM_2.EventSimulation.AirportSimulation;
-using DS_SEM_2.EventSimulation.TestEvenSim;
+using ScottPlot.WinForms;
 
 namespace GUI;
 
 public partial class SimMainForm : Form, ISimGuiDelegate
 {
-    // Ovládacie prvky horného panelu
     private Button btnStart;
     private Button btnPauseResume;
     private Button btnSpeedUp;
@@ -17,25 +16,33 @@ public partial class SimMainForm : Form, ISimGuiDelegate
     private CheckBox cbTurbo;
     private Label lblSimTime;
 
-    // Konfiguračné vstupy
     private NumericUpDown numReplications;
     private NumericUpDown numCapacity;
     private NumericUpDown numMaxBeforeScanner;
     private NumericUpDown numMaxAfterScanner;
 
-    private FlowLayoutPanel topPanel;
-    private FlowLayoutPanel mainGridContainer;
+    private CheckBox cbCustomSeed;
+    private NumericUpDown numSeed;
 
-    // Prvky pre Flow 1
+    private FlowLayoutPanel topPanel;
+    private TabControl tabControl;
+    private TabPage tabLive;
+    private TabPage tabGraphs;
+
+    private FlowLayoutPanel mainGridContainer;
     private DataGridView dgvQueuePassLuggage_1, dgvQueueRTG_1, dgvLuggageBefore_1, dgvLuggageAfter_1, dgvBelt_1;
     private Label lblScanning_1, lblAtRTG_1, lblBodyCheck_1;
-
-    // Prvky pre Flow 2
     private DataGridView dgvQueuePassLuggage_2, dgvQueueRTG_2, dgvLuggageBefore_2, dgvLuggageAfter_2, dgvBelt_2;
     private Label lblScanning_2, lblAtRTG_2, lblBodyCheck_2;
 
-    // Prvky pre štatistiky
     private Label lblStat1, lblStat2, lblStat3;
+
+    private FormsPlot plot1, plot2, plot3;
+    private ScottPlot.Plottables.Scatter s1, s2, s3;
+    private List<ScottPlot.Coordinates> plot1Coord = new();
+    private List<ScottPlot.Coordinates> plot2Coord = new();
+    private List<ScottPlot.Coordinates> plot3Coord = new();
+    private int _actualCapacityGraphs;
 
     private readonly double[] _speedSteps = { 0.05, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 10, 25, 50 };
     private int _currentSpeedIndex = 5;
@@ -48,17 +55,16 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         this.Text = "Airport Simulation Monitor";
         this.WindowState = FormWindowState.Maximized;
 
-        _simulation = new AirportSim(100, 0, 0 ,0);
+        _simulation = new AirportSim(100, 0, 0, 0);
         InitCustomComponents();
     }
 
     private void InitCustomComponents()
     {
-        // --- HORNÝ PANEL (Nastavenia a Ovládanie) ---
         topPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
-            Height = 100,
+            Height = 120,
             AutoSize = true,
             Padding = new Padding(10),
             BackColor = Color.FromArgb(235, 235, 235)
@@ -70,7 +76,6 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         btnPauseResume = new Button { Text = "Pozastaviť", Enabled = false, AutoSize = true };
         btnPauseResume.Click += (s, e) => TogglePause();
 
-        // Sekcia Rýchlosť
         var speedPanel = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(10, 0, 0, 0) };
         btnSpeedDown = new Button { Text = "-", Width = 30 };
         btnSpeedDown.Click += (s, e) => ChangeSpeed(-1);
@@ -84,11 +89,15 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         {
             if (cbTurbo.Checked) _simulation.EnableTurboMode(); else _simulation.DisableTurboMode();
         };
+
+        cbCustomSeed = new CheckBox { Text = "Vlastný Seed", Margin = new Padding(10, 5, 0, 0), AutoSize = true };
+        numSeed = new NumericUpDown { Minimum = 0, Maximum = int.MaxValue, Width = 100, Enabled = false, Value = 123 };
+        cbCustomSeed.CheckedChanged += (s, e) => numSeed.Enabled = cbCustomSeed.Checked;
+
         lblSimTime = new Label { Text = "Čas: 0.00", AutoSize = true, Font = new Font(this.Font, FontStyle.Bold), Margin = new Padding(20, 7, 0, 0), ForeColor = Color.Blue };
 
-        // Vstupy s popismi
         numReplications = CreateNumberInput(1000, 1, 1000000);
-        numCapacity = CreateNumberInput(5760, 1, 1000000);
+        numCapacity = CreateNumberInput(5717, 1, 1000000);
         numMaxBeforeScanner = CreateNumberInput(4, 1, 100);
         numMaxAfterScanner = CreateNumberInput(5, 1, 100);
 
@@ -98,10 +107,36 @@ public partial class SimMainForm : Form, ISimGuiDelegate
             new Label { Text = "Kapacita:", AutoSize = true, Margin = new Padding(15, 7, 0, 0) }, numCapacity,
             new Label { Text = "Max pred sken:", AutoSize = true, Margin = new Padding(15, 7, 0, 0) }, numMaxBeforeScanner,
             new Label { Text = "Max po sken:", AutoSize = true, Margin = new Padding(15, 7, 0, 0) }, numMaxAfterScanner,
+            cbCustomSeed, numSeed,
             lblSimTime
         });
 
-        // --- HLAVNÝ KONTAJNER ---
+        tabControl = new TabControl { Dock = DockStyle.Fill };
+        tabLive = new TabPage { Text = "Sledovanie simulácie" };
+        tabGraphs = new TabPage { Text = "Grafy a Štatistiky" };
+
+        tabControl.SelectedIndexChanged += (s, e) =>
+        {
+            if (tabControl.SelectedTab == tabGraphs)
+            {
+                cbTurbo.Checked = true;
+                cbTurbo.Enabled = false;
+                if (_simulation != null) _simulation.EnableTurboMode();
+            }
+            else
+            {
+                cbTurbo.Enabled = true;
+            }
+        };
+
+        tabControl.Selecting += (s, e) =>
+        {
+            if (btnStart.Text == "Zastaviť simuláciu")
+            {
+                e.Cancel = true;
+            }
+        };
+
         mainGridContainer = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -111,16 +146,51 @@ public partial class SimMainForm : Form, ISimGuiDelegate
             Padding = new Padding(10)
         };
 
-        // Pridanie riadkov pre procesy
         mainGridContainer.Controls.Add(CreateFlowRow(1));
         mainGridContainer.Controls.Add(new Label { Height = 10 });
         mainGridContainer.Controls.Add(CreateFlowRow(2));
         mainGridContainer.Controls.Add(new Label { Height = 15 });
-
-        // Pridanie riadku pre štatistiky
         mainGridContainer.Controls.Add(CreateStatsRow());
+        tabLive.Controls.Add(mainGridContainer);
 
-        this.Controls.Add(mainGridContainer);
+        var graphsContainer = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1
+        };
+        graphsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+        graphsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+        graphsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+
+        plot1 = new FormsPlot { Dock = DockStyle.Fill};
+        plot1.Plot.Title("Priemerná doba bezpečnostnej kontroly");
+        plot1.Plot.XLabel("Kapacita");
+        plot1.Plot.YLabel("Čas");
+
+        plot2 = new FormsPlot { Dock = DockStyle.Fill };
+        plot2.Plot.Title("Priemerný počet ľudí čakajúcich na prevzatie batožiny");
+        plot2.Plot.XLabel("Kapacita");
+        plot2.Plot.YLabel("Počet ľudí");
+
+        plot3 = new FormsPlot { Dock = DockStyle.Fill };
+        plot3.Plot.Title("Priemerný počet ľudí čakajúcich na začiatok prehliadky");
+        plot3.Plot.XLabel("Kapacita");
+        plot3.Plot.YLabel("Počet ľudí");
+
+        s1 = plot1.Plot.Add.Scatter(plot1Coord);
+        s2 = plot2.Plot.Add.Scatter(plot2Coord);
+        s3 = plot3.Plot.Add.Scatter(plot3Coord);
+
+        graphsContainer.Controls.Add(plot1, 0, 0);
+        graphsContainer.Controls.Add(plot2, 1, 0);
+        graphsContainer.Controls.Add(plot3, 2, 0);
+        tabGraphs.Controls.Add(graphsContainer);
+
+        tabControl.TabPages.Add(tabLive);
+        tabControl.TabPages.Add(tabGraphs);
+
+        this.Controls.Add(tabControl);
         this.Controls.Add(topPanel);
     }
 
@@ -141,7 +211,7 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         lblStat3 = new Label { Text = "Priemerný počet ľudí čakajúcich na začiatok prehliadky: ---", AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Margin = new Padding(0, 5, 0, 5) };
 
         statsPanel.Controls.AddRange(new Control[] {
-            new Label { Text = "ŠTATISTIKY", Font = new Font(this.Font, FontStyle.Underline | FontStyle.Bold), Margin = new Padding(0, 0, 0, 10) },
+            new Label { Text = "ŠTATISTIKY", Font = new Font(this.Font, FontStyle.Underline | FontStyle.Bold), Margin = new Padding(0, 0, 0, 10), Width = 800 },
             lblStat1, lblStat2, lblStat3
         });
 
@@ -230,7 +300,7 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         int newIndex = Math.Clamp(_currentSpeedIndex + delta, 0, _speedSteps.Length - 1);
         _currentSpeedIndex = newIndex;
         lblSpeedValue.Text = _speedSteps[_currentSpeedIndex].ToString();
-        _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
+        if (_simulation != null) _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
     }
 
     private void StartSimulation()
@@ -242,14 +312,64 @@ public partial class SimMainForm : Form, ISimGuiDelegate
             int capacity = (int)numCapacity.Value;
             int maxBefore = (int)numMaxBeforeScanner.Value;
             int maxAfter = (int)numMaxAfterScanner.Value;
+            Random r = new();
 
-            _simulation = new AirportSim(reps, capacity, maxBefore, maxAfter);
+            int seed = cbCustomSeed.Checked ? (int)numSeed.Value : r.Next();
+            _simulation = new AirportSim(seed, capacity, maxBefore, maxAfter);
 
-            _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
-            if (cbTurbo.Checked) _simulation.EnableTurboMode(); else _simulation.DisableTurboMode();
+            if (tabControl.SelectedTab == tabGraphs)
+            {
+                plot1Coord.Clear(); plot2Coord.Clear(); plot3Coord.Clear();
+                cbTurbo.Checked = true;
+
+                int points = 10;
+                int capacity90 = (int)(capacity * 0.9);
+                int capacity110 = (int)(capacity * 1.1);
+                int step = (capacity110 - capacity90) / points;
+
+                Task.Run(() =>
+                {
+                    int currentCap = capacity90;
+                    Random r = new();
+
+                    for (int i = 0; i < points; i++)
+                    {
+                        int seed = cbCustomSeed.Checked ? (int)numSeed.Value : r.Next();
+                        var sim = new AirportSim(seed, currentCap, (int)numMaxBeforeScanner.Value, (int)numMaxAfterScanner.Value);
+                        sim.EnableTurboMode();
+
+                        sim.RunSimulation(reps);
+
+                        this.Invoke(() =>
+                        {
+                            plot1Coord.Add(new ScottPlot.Coordinates(currentCap, sim.AverageTimeInSystemFinal.GetAverage()));
+                            plot2Coord.Add(new ScottPlot.Coordinates(currentCap, sim.AverageLuggageWaitingQueueLengthFinal.GetAverage()));
+                            plot3Coord.Add(new ScottPlot.Coordinates(currentCap, sim.AverageLuggageQueueLengthFinal.GetAverage()));
+
+                            RefreshGUI();
+                        });
+
+                        currentCap += step;
+                    }
+
+                    this.Invoke(() => StartButtonChangeOnStop());
+                });
+
+                return;
+            }
+            else
+            {
+                if (cbTurbo.Checked) _simulation.EnableTurboMode(); else _simulation.DisableTurboMode();
+                _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
+            }
 
             _simulation.RegisterGUIDelegate(this);
-            Task.Run(() => _simulation.RunSimulation(reps));
+            Task.Run(() =>
+            {
+                _simulation.RunSimulation(reps);
+                this.Invoke(new Action(StartButtonChangeOnStop));
+            });
+
         }
         else
         {
@@ -296,6 +416,20 @@ public partial class SimMainForm : Form, ISimGuiDelegate
             this.BeginInvoke(new Action(RefreshGUI));
             return;
         }
+
+        if (tabControl.SelectedTab == tabGraphs)
+        {
+            plot1.Plot.Axes.AutoScale();
+            plot2.Plot.Axes.AutoScale();
+            plot3.Plot.Axes.AutoScale();
+            plot1.Refresh();
+            plot2.Refresh();
+            plot3.Refresh();
+            return;
+        }
+
+
+
 
         if (_simulation.IsSimulationFinished)
             StartButtonChangeOnStop();
@@ -393,9 +527,21 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         lblAtRTG_2.Text = "Pasažier RTG: " + _simulation.PassengersFlow2.PassengerRTG?.Id;
         lblBodyCheck_1.Text = "Osobná prehliadka: " + _simulation.PassengersFlow1.PassengerPersonalScan?.Id;
         lblBodyCheck_2.Text = "Osobná prehliadka: " + _simulation.PassengersFlow2.PassengerPersonalScan?.Id;
-    
-        lblStat1.Text = $"Priemerný čas na bezpečnostnej kontrole: {_simulation.AverageTimeInSystemFinal.GetAverage():F5}";
-        lblStat2.Text = $"Priemerný počet ľudí čakajúcich na prevzatie batožiny: {_simulation.AverageLuggageWaitingQueueLengthFinal.GetAverage():F5}";
-        lblStat3.Text = $"Priemerný počet ľudí čakajúcich na začiatok prehliadky: {_simulation.AverageLuggageQueueLengthFinal.GetAverage():F5}";
+
+        var stat1Conf = _simulation.AverageTimeInSystemFinal.GetConfidenceInterval90();
+        var stat2Conf = _simulation.AverageLuggageWaitingQueueLengthFinal.GetConfidenceInterval90();
+        var stat3Conf = _simulation.AverageLuggageQueueLengthFinal.GetConfidenceInterval90();
+        lblStat1.Text = $"Priemerný čas na bezpečnostnej kontrole: " +
+            TimeSpan.FromSeconds(_simulation.AverageTimeInSystemFinal.GetAverage()) + "   " +
+            MakeConfidenceIntervalString(TimeSpan.FromSeconds(stat1Conf.Lower).ToString(), TimeSpan.FromSeconds(stat1Conf.Upper).ToString());
+        lblStat2.Text = $"Priemerný počet ľudí čakajúcich na prevzatie batožiny: {_simulation.AverageLuggageWaitingQueueLengthFinal.GetAverage():F5}   " +
+            MakeConfidenceIntervalString(stat2Conf.Lower.ToString("F5"), stat2Conf.Upper.ToString("F5"));
+        lblStat3.Text = $"Priemerný počet ľudí čakajúcich na začiatok prehliadky: {_simulation.AverageLuggageQueueLengthFinal.GetAverage():F5}   " +
+            MakeConfidenceIntervalString(stat3Conf.Lower.ToString("F5"), stat3Conf.Upper.ToString("F5"));
+    }
+
+    private string MakeConfidenceIntervalString(string lower, string upper)
+    {
+        return "[" + lower + " ; " + upper + "]";
     }
 }

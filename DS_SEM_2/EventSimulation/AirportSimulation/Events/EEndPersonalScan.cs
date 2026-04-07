@@ -27,7 +27,9 @@ public class EEndPersonalScan : PassengerEvent
         else
         {
             flow.PassengersWaitingLuggageQueue.Enqueue(Passenger_);
-            Simulation.AverageLuggageWaitingQueueLength.Add(flow.PassengersWaitingLuggageQueue.Count, ExecuteTime);
+            var luggageWaitQueueCountSum = Simulation.PassengersFlow1.PassengersWaitingLuggageQueue.Count
+                    + Simulation.PassengersFlow2.PassengersWaitingLuggageQueue.Count;
+            Simulation.AverageLuggageWaitingQueueLength.Add(luggageWaitQueueCountSum, ExecuteTime);
             if (flow.PassengersWaitingLuggageQueue.Peek() == Passenger_)
             {
                 Passenger_.IsReadyToLeave = true;

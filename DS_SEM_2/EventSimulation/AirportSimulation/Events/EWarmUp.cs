@@ -13,7 +13,6 @@ public class EWarmUp : BaseEvent<AirportSim>
         if (!Simulation.IsWarmedUp)
         {
             Simulation.WarmUpSamples.Enqueue(_timeInSystem);
-            Simulation.PassToWarmUp++;
             if (Simulation.WarmUpSamples.Count > Simulation.WarmUpSamplesCount)
             {
                 Simulation.WarmUpSamples.Dequeue();

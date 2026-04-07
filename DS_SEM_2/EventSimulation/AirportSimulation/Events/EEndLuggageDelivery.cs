@@ -13,7 +13,8 @@ public class EEndLuggageDelivery : PassengerEvent
         if (Passenger_.LuggageDelivered == Passenger_.Luggages.Count)
         {
             flow.PassengersLuggageQueue.Dequeue();
-            Simulation.AverageLuggageQueueLength.Add(flow.PassengersLuggageQueue.Count, ExecuteTime);
+            var luggageQueueCountSum = Simulation.PassengersFlow1.PassengersLuggageQueue.Count + Simulation.PassengersFlow2.PassengersLuggageQueue.Count;
+            Simulation.AverageLuggageQueueLength.Add(luggageQueueCountSum, ExecuteTime);
             flow.PassengersRTGQueue.Enqueue(Passenger_);
             if (flow.PassengersRTGQueue.Peek() == Passenger_
                 && flow.IsRTGAvail)

@@ -17,7 +17,7 @@ public class EStartLuggageScan : LuggageEvent
         Simulation.PlanEvent(endLugScan);
 
         if (flow.PassengersLuggageQueue.Count > 0
-            && flow.LuggagesAfterQueue.Count < Simulation.MaxLuggageAfter)
+            && flow.LuggagesBeforeQueue.Count < Simulation.MaxLuggageBefore)
         {
             var passenger = flow.PassengersLuggageQueue.Peek();
             EStartLuggageDelivery startLugDel = new(ExecuteTime, Simulation, passenger);
