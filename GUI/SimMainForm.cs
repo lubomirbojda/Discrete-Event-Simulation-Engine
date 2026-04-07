@@ -1,3 +1,5 @@
+using System.Data;
+using System.Reflection;
 using DS_SEM_2.EventSimulation;
 using DS_SEM_2.EventSimulation.AirportSimulation;
 using DS_SEM_2.EventSimulation.TestEvenSim;
@@ -14,38 +16,51 @@ public partial class SimMainForm : Form, ISimGuiDelegate
     private CheckBox cbTurbo;
     private Label lblSimTime;
     private FlowLayoutPanel topPanel;
+    private FlowLayoutPanel mainGridContainer;
 
+    // Prvky pre Flow 1
     private DataGridView dgvQueuePassLuggage_1;
     private DataGridView dgvQueueRTG_1;
     private DataGridView dgvLuggageBefore_1;
     private DataGridView dgvLuggageAfter_1;
+    private DataGridView dgvBelt_1;
+    private Label lblScanning_1;
+    private Label lblAtRTG_1;
+    private Label lblBodyCheck_1;
 
+    // Prvky pre Flow 2
     private DataGridView dgvQueuePassLuggage_2;
     private DataGridView dgvQueueRTG_2;
     private DataGridView dgvLuggageBefore_2;
     private DataGridView dgvLuggageAfter_2;
+    private DataGridView dgvBelt_2;
+    private Label lblScanning_2;
+    private Label lblAtRTG_2;
+    private Label lblBodyCheck_2;
 
-    private FlowLayoutPanel gridPanel;
-
-    private readonly double[] _speedSteps = { 0.05, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 10, 25, 50, 100, 1000, 5000, 10000, 100_000, 1_000_000, double.MaxValue };
+    private readonly double[] _speedSteps = { 0.05, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 10, 25, 50};
     private int _currentSpeedIndex = 5;
 
-    private AirportSim _simulation = new(100);
+    private AirportSim _simulation;
 
     public SimMainForm()
     {
         InitializeComponent();
+        this.Text = "Airport Simulation Monitor";
+        this.WindowState = FormWindowState.Maximized;
+        _simulation = new AirportSim(100);
         InitCustomComponents();
     }
 
     private void InitCustomComponents()
     {
-        topPanel = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 50, AutoSize = true };
+        // --- HORNÝ PANEL ---
+        topPanel = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 60, AutoSize = true, Padding = new Padding(10) };
 
-        btnStart = new Button { Text = "Spusti", AutoSize = true };
+        btnStart = new Button { Text = "Spustiť", AutoSize = true };
         btnStart.Click += (s, e) => StartSimulation();
 
-        btnPauseResume = new Button { Text = "Pozastav", Enabled = false, AutoSize = true };
+        btnPauseResume = new Button { Text = "Pozastaviť", Enabled = false, AutoSize = true };
         btnPauseResume.Click += (s, e) => TogglePause();
 
         btnSpeedDown = new Button { Text = "-", Width = 30 };
@@ -58,73 +73,92 @@ public partial class SimMainForm : Form, ISimGuiDelegate
 
         cbTurbo = new CheckBox { Text = "Turbo", Margin = new Padding(10, 5, 0, 0) };
 
-        lblSimTime = new Label { Text = "Simulačný čas: 0.00", AutoSize = true, Margin = new Padding(15, 7, 0, 0) };
+        lblSimTime = new Label { Text = "Simulačný čas: 0.00", AutoSize = true, Font = new Font(this.Font, FontStyle.Bold), Margin = new Padding(20, 7, 0, 0) };
 
-        topPanel.Controls.Add(btnStart);
-        topPanel.Controls.Add(btnPauseResume);
-        topPanel.Controls.Add(new Label { Text = "Rýchlosť:", Margin = new Padding(10, 7, 0, 0) });
-        topPanel.Controls.Add(btnSpeedDown);
-        topPanel.Controls.Add(lblSpeedValue);
-        topPanel.Controls.Add(btnSpeedUp);
-        topPanel.Controls.Add(cbTurbo);
-        topPanel.Controls.Add(lblSimTime);
+        topPanel.Controls.AddRange(new Control[] {
+            btnStart, btnPauseResume, new Label { Text = "Rýchlosť:", Margin = new Padding(20, 7, 0, 0) },
+            btnSpeedDown, lblSpeedValue, btnSpeedUp, cbTurbo, lblSimTime
+        });
 
-        gridPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, WrapContents = true };
+        // --- HLAVNÝ KONTAJNER ---
+        mainGridContainer = new FlowLayoutPanel {
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Padding = new Padding(10)
+        };
 
-        dgvQueuePassLuggage_1 = CreateGrid("id cestujuceho", "id batozin");
-        dgvQueueRTG_1 = CreateGrid("id cestujuceho", "id batozin");
-        dgvLuggageBefore_1 = CreateGrid("id batoziny", "id osoby");
-        dgvLuggageAfter_1 = CreateGrid("id batoziny", "id osoby");
+        mainGridContainer.Controls.Add(CreateFlowRow(1));
+        mainGridContainer.Controls.Add(new Label { Text = " ", Height = 20 });
+        mainGridContainer.Controls.Add(CreateFlowRow(2));
 
-        dgvQueuePassLuggage_2 = CreateGrid("id cestujuceho", "id batozin");
-        dgvQueueRTG_2 = CreateGrid("id cestujuceho", "id batozin");
-        dgvLuggageBefore_2 = CreateGrid("id batoziny", "id osoby");
-        dgvLuggageAfter_2 = CreateGrid("id batoziny", "id osoby");
-
-        gridPanel.Controls.Add(CreateGridContainer("Front(1) odovzdávanie batožiny", dgvQueuePassLuggage_1));
-        gridPanel.Controls.Add(CreateGridContainer("Front(1) pred RTG", dgvQueueRTG_1));
-        gridPanel.Controls.Add(CreateGridContainer("Front(1) batožín pred skenerom", dgvLuggageBefore_1));
-        gridPanel.Controls.Add(CreateGridContainer("Front(1) batožín po skeneri", dgvLuggageAfter_1));
-
-        gridPanel.Controls.Add(CreateGridContainer("Front(2) odovzdávanie batožiny", dgvQueuePassLuggage_2));
-        gridPanel.Controls.Add(CreateGridContainer("Front(2) pred RTG", dgvQueueRTG_2));
-        gridPanel.Controls.Add(CreateGridContainer("Front(2) batožín pred skenerom", dgvLuggageBefore_2));
-        gridPanel.Controls.Add(CreateGridContainer("Front(2) batožín po skeneri", dgvLuggageAfter_2));
-
-        this.Controls.Add(gridPanel);
+        this.Controls.Add(mainGridContainer);
         this.Controls.Add(topPanel);
+    }
+
+    private Panel CreateFlowRow(int flowNum)
+    {
+        var rowPanel = new FlowLayoutPanel {
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true,
+            WrapContents = false,
+            BackColor = flowNum == 1 ? Color.GhostWhite : Color.SeaShell,
+            BorderStyle = BorderStyle.FixedSingle,
+            Padding = new Padding(5)
+        };
+
+        var dgvPass = CreateGrid("ID Pasažier", "Batožiny");
+        var dgvRTG = CreateGrid("ID Pasažier", "Batožiny");
+        var dgvBefore = CreateGrid("ID Batožina", "Vlastník");
+        var dgvAfter = CreateGrid("ID Batožina", "Vlastník");
+        var dgvBelt = CreateGrid("ID Pasažier", "Batožiny");
+
+        var lblScan = new Label { Text = "Skenuje sa: ---", AutoSize = true, ForeColor = Color.DarkBlue, Margin = new Padding(5, 60, 5, 0) };
+        var lblRtgP = new Label { Text = "Pasažier RTG: ---", AutoSize = true, ForeColor = Color.DarkGreen };
+        var lblBody = new Label { Text = "Osobná prehliadka: ---", AutoSize = true, ForeColor = Color.DarkRed };
+
+        if (flowNum == 1) {
+            dgvQueuePassLuggage_1 = dgvPass; dgvQueueRTG_1 = dgvRTG; dgvLuggageBefore_1 = dgvBefore;
+            dgvLuggageAfter_1 = dgvAfter; dgvBelt_1 = dgvBelt;
+            lblScanning_1 = lblScan; lblAtRTG_1 = lblRtgP; lblBodyCheck_1 = lblBody;
+        } else {
+            dgvQueuePassLuggage_2 = dgvPass; dgvQueueRTG_2 = dgvRTG; dgvLuggageBefore_2 = dgvBefore;
+            dgvLuggageAfter_2 = dgvAfter; dgvBelt_2 = dgvBelt;
+            lblScanning_2 = lblScan; lblAtRTG_2 = lblRtgP; lblBodyCheck_2 = lblBody;
+        }
+
+        rowPanel.Controls.Add(CreateGridContainer($"({flowNum}) Odovzdávanie", dgvPass));
+        var rtgSection = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, AutoSize = true };
+        rtgSection.Controls.Add(CreateGridContainer($"({flowNum}) Pred RTG", dgvRTG));
+        rtgSection.Controls.Add(lblRtgP); rtgSection.Controls.Add(lblBody);
+        rowPanel.Controls.Add(rtgSection);
+        rowPanel.Controls.Add(CreateGridContainer($"({flowNum}) Pred skenerom", dgvBefore));
+        rowPanel.Controls.Add(lblScan);
+        rowPanel.Controls.Add(CreateGridContainer($"({flowNum}) Po skeneri", dgvAfter));
+        rowPanel.Controls.Add(CreateGridContainer($"({flowNum}) Posuvný pás", dgvBelt));
+
+        return rowPanel;
     }
 
     private DataGridView CreateGrid(string col1, string col2)
     {
-        var dgv = new DataGridView
-        {
-            ColumnCount = 2,
-            ReadOnly = true,
-            RowHeadersVisible = false,
+        var dgv = new DataGridView {
+            ColumnCount = 2, ReadOnly = true, RowHeadersVisible = false,
             AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false,
-            AllowUserToResizeRows = false,
-            AllowUserToOrderColumns = false,
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            MultiSelect = false,
-            Height = 300,
-            Width = 250
+            AllowUserToAddRows = false, Height = 150, Width = 180, BackgroundColor = Color.White
         };
+        dgv.Columns[0].Name = col1; dgv.Columns[1].Name = col2;
 
-        dgv.Columns[0].Name = col1;
-        dgv.Columns[0].SortMode = DataGridViewColumnSortMode.NotSortable;
-
-        dgv.Columns[1].Name = col2;
-        dgv.Columns[1].SortMode = DataGridViewColumnSortMode.NotSortable;
-
+        typeof(Control).GetProperty("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?.SetValue(dgv, true, null);
+        
         return dgv;
     }
 
     private Panel CreateGridContainer(string title, DataGridView dgv)
     {
-        var panel = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, AutoSize = true, Margin = new Padding(10) };
+        var panel = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, AutoSize = true, Margin = new Padding(5) };
         panel.Controls.Add(new Label { Text = title, AutoSize = true, Font = new Font(this.Font, FontStyle.Bold) });
         panel.Controls.Add(dgv);
         return panel;
@@ -132,64 +166,61 @@ public partial class SimMainForm : Form, ISimGuiDelegate
 
     private void ChangeSpeed(int delta)
     {
-        int newIndex = _currentSpeedIndex + delta;
-        if (newIndex >= 0 && newIndex < _speedSteps.Length)
-        {
-            _currentSpeedIndex = newIndex;
-            if (_currentSpeedIndex == _speedSteps.Length - 1)
-                lblSpeedValue.Text = "inf";
-            else
-                lblSpeedValue.Text = _speedSteps[_currentSpeedIndex].ToString();
-
-            _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
-        }
+        int newIndex = Math.Clamp(_currentSpeedIndex + delta, 0, _speedSteps.Length - 1);
+        _currentSpeedIndex = newIndex;
+        lblSpeedValue.Text = _speedSteps[_currentSpeedIndex].ToString();
+        _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
     }
 
     private void StartSimulation()
     {
         btnPauseResume.Enabled = true;
-        btnPauseResume.Text = "Pozastav";
-        _simulation = new(100);
+        btnPauseResume.Text = "Pozastaviť";
+        
+        _simulation = new AirportSim(100);
         _simulation.SetSpeed(_speedSteps[_currentSpeedIndex]);
-        _simulation.DisableTurboMode();
+        if (cbTurbo.Checked) _simulation.EnableTurboMode(); else _simulation.DisableTurboMode();
+        
         _simulation.RegisterGUIDelegate(this);
-
         Task.Run(() => _simulation.RunSimulation(1000));
     }
 
     private void TogglePause()
     {
-        if (btnPauseResume.Text == "Pozastav")
-        {
-            btnPauseResume.Text = "Pokračuj";
+        if (btnPauseResume.Text == "Pozastaviť") {
+            btnPauseResume.Text = "Pokračovať";
             _simulation.PauseSimulation();
-        }
-        else
-        {
-            btnPauseResume.Text = "Pozastav";
+        } else {
+            btnPauseResume.Text = "Pozastaviť";
             _simulation.ResumeSimulation();
         }
     }
 
     public void RefreshGUI()
     {
+        if (this.IsDisposed || !this.IsHandleCreated) return;
+
         if (InvokeRequired)
         {
-            Invoke(new Action(RefreshGUI));
+            this.BeginInvoke(new Action(RefreshGUI));
             return;
         }
 
         lblSimTime.Text = $"Simulačný čas: {_simulation.SimTime:F2}" + " replikacia: " + _simulation.CurrentReplication;
+
+        if (_simulation.Speed > 50)
+            return;
+
         //Queues luggage delivery
         dgvQueuePassLuggage_1.SuspendLayout();
         dgvQueuePassLuggage_1.Rows.Clear();
         dgvQueuePassLuggage_2.SuspendLayout();
         dgvQueuePassLuggage_2.Rows.Clear();
-        foreach (var passenger in _simulation.PassengersFlow1.PassengersLuggageQueue)
+        foreach (var passenger in _simulation.PassengersFlow1.PassengersLuggageQueue.ToList())
         {
             dgvQueuePassLuggage_1.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
         }
-        foreach (var passenger in _simulation.PassengersFlow2.PassengersLuggageQueue)
+        foreach (var passenger in _simulation.PassengersFlow2.PassengersLuggageQueue.ToList())
         {
             dgvQueuePassLuggage_2.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
         }
@@ -201,11 +232,11 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         dgvQueueRTG_1.Rows.Clear();
         dgvQueueRTG_2.SuspendLayout();
         dgvQueueRTG_2.Rows.Clear();
-        foreach (var passenger in _simulation.PassengersFlow1.PassengersRTGQueue)
+        foreach (var passenger in _simulation.PassengersFlow1.PassengersRTGQueue.ToList())
         {
             dgvQueueRTG_1.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
         }
-        foreach (var passenger in _simulation.PassengersFlow2.PassengersRTGQueue)
+        foreach (var passenger in _simulation.PassengersFlow2.PassengersRTGQueue.ToList())
         {
             dgvQueueRTG_2.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
         }
@@ -217,11 +248,11 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         dgvLuggageBefore_1.Rows.Clear();
         dgvLuggageBefore_2.SuspendLayout();
         dgvLuggageBefore_2.Rows.Clear();
-        foreach (var luggage in _simulation.PassengersFlow1.LuggagesBeforeQueue)
+        foreach (var luggage in _simulation.PassengersFlow1.LuggagesBeforeQueue.ToList())
         {
             dgvLuggageBefore_1.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
-        foreach (var luggage in _simulation.PassengersFlow2.LuggagesBeforeQueue)
+        foreach (var luggage in _simulation.PassengersFlow2.LuggagesBeforeQueue.ToList())
         {
             dgvLuggageBefore_2.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
@@ -233,15 +264,40 @@ public partial class SimMainForm : Form, ISimGuiDelegate
         dgvLuggageAfter_1.Rows.Clear();
         dgvLuggageAfter_2.SuspendLayout();
         dgvLuggageAfter_2.Rows.Clear();
-        foreach (var luggage in _simulation.PassengersFlow1.LuggagesAfterQueue)
+        foreach (var luggage in _simulation.PassengersFlow1.LuggagesAfterQueue.ToList())
         {
             dgvLuggageAfter_1.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
-        foreach (var luggage in _simulation.PassengersFlow2.LuggagesAfterQueue)
+        foreach (var luggage in _simulation.PassengersFlow2.LuggagesAfterQueue.ToList())
         {
             dgvLuggageAfter_2.Rows.Add(luggage.ID, luggage.Passenger.Id);
         }
         dgvLuggageAfter_1.ResumeLayout();
         dgvLuggageAfter_2.ResumeLayout();
+
+        //Queues waiting for luggage
+        dgvBelt_1.SuspendLayout();
+        dgvBelt_1.Rows.Clear();
+        dgvBelt_2.SuspendLayout();
+        dgvBelt_2.Rows.Clear();
+        foreach (var passenger in _simulation.PassengersFlow1.PassengersWaitingLuggageQueue.ToList())
+        {
+            dgvBelt_1.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
+        }
+        foreach (var passenger in _simulation.PassengersFlow2.PassengersWaitingLuggageQueue.ToList())
+        {
+            dgvBelt_2.Rows.Add(passenger.Id, string.Join(",", passenger.Luggages.Select(l => l.ID)));
+        }
+        dgvBelt_1.ResumeLayout();
+        dgvBelt_2.ResumeLayout();
+
+
+        //Labels update
+        lblScanning_1.Text = "Skenuje sa: " + _simulation.PassengersFlow1.LuggageScan?.ID;
+        lblScanning_2.Text = "Skenuje sa: " + _simulation.PassengersFlow2.LuggageScan?.ID;
+        lblAtRTG_1.Text = "Pasažier RTG: " + _simulation.PassengersFlow1.PassengerRTG?.Id;
+        lblAtRTG_2.Text = "Pasažier RTG: " + _simulation.PassengersFlow2.PassengerRTG?.Id;
+        lblBodyCheck_1.Text = "Osobná prehliadka: " + _simulation.PassengersFlow1.PassengerPersonalScan?.Id;
+        lblBodyCheck_2.Text = "Osobná prehliadka: " + _simulation.PassengersFlow2.PassengerPersonalScan?.Id;
     }
 }

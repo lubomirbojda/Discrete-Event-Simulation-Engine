@@ -10,6 +10,8 @@ public class EEndPersonalScan : PassengerEvent
     {
         var flow = Passenger_.PassengerFlow;
         flow.IsRTGAvail = true;
+        Passenger_.PassengerFlow.PassengerRTG = null;
+        Passenger_.PassengerFlow.PassengerPersonalScan = null;
         if (flow.PassengersRTGQueue.Count > 0)
         {
             var nextPass = flow.PassengersRTGQueue.Dequeue();

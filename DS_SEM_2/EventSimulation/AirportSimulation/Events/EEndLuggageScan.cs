@@ -11,6 +11,7 @@ public class EEndLuggageScan : LuggageEvent
         var flow = Luggage_.Passenger.PassengerFlow;
         flow.LuggagesAfterQueue.Enqueue(Luggage_);
         flow.IsScannerBusy = false;
+        flow.LuggageScan = null;
 
         //Plan passenger leave if all luggage is scanned - else set ready to leave on true and put to leave queue
         if (Luggage_.Passenger.IsReadyToLeave)

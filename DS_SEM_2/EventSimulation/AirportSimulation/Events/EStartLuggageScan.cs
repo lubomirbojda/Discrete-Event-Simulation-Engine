@@ -11,6 +11,7 @@ public class EStartLuggageScan : LuggageEvent
         var flow = Luggage_.Passenger.PassengerFlow;
         //Set scanner availability to false and plan end of luggage scan
         flow.IsScannerBusy = true;
+        flow.LuggageScan = Luggage_;
         var scanTime = Simulation.LuggageScanGen.GenerateNext();
         EEndLuggageScan endLugScan = new(ExecuteTime + scanTime, Simulation, Luggage_);
         Simulation.PlanEvent(endLugScan);

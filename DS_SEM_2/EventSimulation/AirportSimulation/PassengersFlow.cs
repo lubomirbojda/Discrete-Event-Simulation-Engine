@@ -12,6 +12,10 @@ public class PassengersFlow
     public bool IsScannerBusy { get; set; } = false;
     public bool IsRTGAvail { get; set; } = true;
 
+    public Passenger? PassengerRTG { get; set; } = null;
+    public Passenger? PassengerPersonalScan { get; set; } = null;
+    public Luggage? LuggageScan { get; set; } = null;
+
     public void Reset()
     {
         PassengersLuggageQueue.Clear();

@@ -18,6 +18,7 @@ public class EEndRTG : PassengerEvent
         else
         {
             flow.IsRTGAvail = true;
+            Passenger_.PassengerFlow.PassengerRTG = null;
             if (flow.PassengersRTGQueue.Count > 0)
             {
                 var nextPass = flow.PassengersRTGQueue.Dequeue();
