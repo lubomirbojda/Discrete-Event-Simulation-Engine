@@ -23,6 +23,7 @@ This project was developed as a university semester project (**Semester Project 
 - [Installation & How to Run](#installation--how-to-run)
 - [GUI Controls & Usage](#gui-controls--usage)
 - [Documentation](#documentation)
+- [Screenshots](#screenshots)
 
 ---
 
